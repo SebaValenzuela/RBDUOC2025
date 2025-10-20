@@ -32,6 +32,14 @@ def actualizar_graficos(pptx_path, output_path, graficos_config, textos_config=N
         chart_data = cfg["chart_builder"](df_preparado, *cfg["chart_builder_args"])
         chart.replace_data(chart_data)
 
+        try:
+            if hasattr(chart, "value_axis"):
+                chart.value_axis.tick_labels.number_format = "0%"  # Eje numérico → 25%
+            elif hasattr(chart, "category_axis"):
+                chart.category_axis.tick_labels.number_format = "0%"
+        except ValueError:
+            pass
+
         # Etiquetas de porcentaje
         for series in chart.series:
             series.has_data_labels = True
