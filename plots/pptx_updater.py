@@ -21,9 +21,19 @@ def actualizar_graficos(pptx_path, output_path, graficos_config, textos_config=N
                 key = (shape.name or "").strip().lower()
                 text_shapes_map[key] = shape
 
+    charts_no_porcentaje = [
+        "nivel_bienestar",
+        "nivel_bienestar_sede",
+        "perma_2022_2025_chart",
+        "nhl_2022_2025_chart"
+    ]
+
+    charts_no_porcentaje_lower = [name.lower() for name in charts_no_porcentaje]
+    
     # --- Actualizar gráficos ---
     for chart_name, cfg in graficos_config.items():
-        chart = charts_map.get(chart_name.lower())
+        chart_name_lower = chart_name.lower()
+        chart = charts_map.get(chart_name_lower)
         if not chart:
             print(f"⚠️ No se encontró gráfico '{chart_name}'")
             continue
@@ -32,18 +42,33 @@ def actualizar_graficos(pptx_path, output_path, graficos_config, textos_config=N
         chart_data = cfg["chart_builder"](df_preparado, *cfg["chart_builder_args"])
         chart.replace_data(chart_data)
 
-        try:
-            if hasattr(chart, "value_axis"):
-                chart.value_axis.tick_labels.number_format = "0%"  # Eje numérico → 25%
-            elif hasattr(chart, "category_axis"):
-                chart.category_axis.tick_labels.number_format = "0%"
-        except ValueError:
-            pass
+        if chart_name_lower not in charts_no_porcentaje_lower:
+            # Formatear Eje de Valores como porcentaje (SOLO para gráficos de porcentaje)
+            try:
+                if hasattr(chart, "value_axis"):
+                    chart.value_axis.tick_labels.number_format = "0%"  # Eje numérico → 25%
+                elif hasattr(chart, "category_axis"): # Esto es inusual para un eje de valor
+                    chart.category_axis.tick_labels.number_format = "0%"
+            except ValueError:
+                pass
 
-        # Etiquetas de porcentaje
-        for series in chart.series:
-            series.has_data_labels = True
-            series.data_labels.number_format = '0%'  # convierte decimales (0.25 → 25%)
+            # Formatear Etiquetas de Datos como porcentaje (SOLO para gráficos de porcentaje)
+            for series in chart.series:
+                series.has_data_labels = True
+                series.data_labels.number_format = '0%'
+        else:
+            print("HOLA PROMEDIO")
+            # 💡 Lógica opcional para PROMEDIOS: usar un formato decimal (ej: 0.0)
+            try:
+                 if hasattr(chart, "value_axis"):
+                    chart.value_axis.tick_labels.number_format = "0.0" 
+            except ValueError:
+                pass
+            
+            # Formatear Etiquetas de Datos para PROMEDIOS
+            for series in chart.series:
+                series.has_data_labels = True
+                series.data_labels.number_format = '0.0'
 
         print(f"✅ {chart_name} actualizado correctamente")
 

@@ -1,9 +1,25 @@
-from data.datasets import ansiedad_manejo_clinico, cupit_marihuana, porcentaje_para_barras_apiladas, cantidad_total_dms5, promedio_factor_carga_enfermedad_grupo_rojo, promedio_factor_carga_enfermedad_grupo_amarillo, marihuana_manejo_clinico, personalidad_manejo_clinico, porcentaje_afrontamiento, porcentaje_estresores_exigencia, porcentaje_por_categoria, casos_validos_pss, aplicar_regla_pss,porcentaje_procrastinacion, porcentaje_salud_cronica, promedio_por_categoria, porcentaje_estresores, top_estresores_2022, depresion_manejo_clinico, alcohol_manejo_clinico, ideacion_suicida_manejo_clinico, salud_mental_grupo_verde, salud_mental_grupo_rojo
+from data.datasets import (
+    flow_percibido, apoyo_percibido, barreras_acceso_tratamiento,
+    ansiedad_manejo_clinico, cupit_marihuana,
+    porcentaje_para_barras_apiladas, cantidad_total_dms5,
+    promedio_factor_carga_enfermedad_grupo_rojo, promedio_factor_carga_enfermedad_grupo_amarillo,
+    marihuana_manejo_clinico,
+    personalidad_manejo_clinico, porcentaje_afrontamiento, porcentaje_estresores_exigencia,
+    porcentaje_por_categoria, casos_validos_pss,
+    aplicar_regla_pss, porcentaje_procrastinacion, porcentaje_salud_cronica,
+    promedio_por_categoria, porcentaje_estresores,
+    top_estresores_2022, depresion_manejo_clinico, alcohol_manejo_clinico,
+    ideacion_suicida_manejo_clinico, salud_mental_grupo_verde, salud_mental_grupo_rojo,
+    alimentacion, ingesta_liquidos, tabaquismo, nivel_bienestar, flow_percibido_positivo,
+    salud_mental_2022, bienestar_2022, perma_2022_2025, nhl_2022_2025,
+    porcentaje_grupo_amarillo_por_condicion
+)
 from plots.charts import crear_chart_data
 from plots.pptx_updater import actualizar_graficos
 
 def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, df_estresores, df_exigencia, df_afrontamiento, df_procrastinacion, df_salud_cronica, df_depresion,
-                    df_ansiedad, df_personalidad, df_marihuana, df_alcohol, df_suicidio, df_grupo_verde, df_grupo_rojo, df_necesidad_tratamiento):
+                    df_ansiedad, df_personalidad, df_marihuana, df_alcohol, df_suicidio, df_grupo_verde, df_grupo_rojo, df_necesidad_tratamiento, df_barreras, df_apoyo,
+                    df_flow_states, df_act_fisica, df_alimentacion, df_ing_liquidos, df_tabaquismo, df_perma, df_salud_mental_2022, df_bienestar_2022):
     template_path = "reports/templates/template-prueba.pptx"
     output_path = "reports/output/reporte-generado.pptx"
 
@@ -12,17 +28,38 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
     nivel_estres_promedio_2025 = df_valido["pct_persona"].mean()
 
     df_depresion_malestar_clinico = depresion_manejo_clinico(df_depresion, None)
+    df_depresion_genero = depresion_manejo_clinico(df_depresion, ["GENERO"])
     depresion_manejo_clinico_global = df_depresion_malestar_clinico["Valor"].iloc[0]
+    depresion_femenino = df_depresion_genero[df_depresion_genero["Categoria"] == "Femenino"]["Valor"].iloc[0]
+
     df_ansiedad_malestar_clinico = ansiedad_manejo_clinico(df_ansiedad, None)
+    df_ansiedad_genero = ansiedad_manejo_clinico(df_ansiedad, ["GENERO"])
     ansiedad_manejo_clinico_global = df_ansiedad_malestar_clinico["Valor"].iloc[0]
+    ansiedad_femenino = df_ansiedad_genero[df_ansiedad_genero["Categoria"] == "Femenino"]["Valor"].iloc[0]
+
     df_personalidad_malestar_clinico = personalidad_manejo_clinico(df_personalidad, None)
+    df_personalidad_genero = personalidad_manejo_clinico(df_personalidad, ["GENERO"])
     personalidad_manejo_clinico_global = df_personalidad_malestar_clinico["Valor"].iloc[0]
+    personalidad_femenino = df_personalidad_genero[df_personalidad_genero["Categoria"] == "Femenino"]["Valor"].iloc[0]
+
     df_marihuana_malestar_clinico = marihuana_manejo_clinico(df_marihuana, None)
+    df_marihuana_genero = marihuana_manejo_clinico(df_marihuana, ["GENERO"])
     marihuana_manejo_clinico_global = df_marihuana_malestar_clinico["Valor"].iloc[0]
+    marihuana_femenino = df_marihuana_genero[df_marihuana_genero["Categoria"] == "Femenino"]["Valor"].iloc[0]
+
+
     df_alcohol_manejo_clinico = alcohol_manejo_clinico(df_alcohol, None)
+    df_alcohol_genero = alcohol_manejo_clinico(df_alcohol, ["GENERO"])
     alcohol_manejo_clinico_global = df_alcohol_manejo_clinico["Valor"].iloc[0]
+    alcohol_femenino = df_alcohol_genero[df_alcohol_genero["Categoria"] == "Femenino"]["Valor"].iloc[0]
+
     df_ideacion_suicida_manejo_clinico = ideacion_suicida_manejo_clinico(df_suicidio, None)
+    df_suicidio_genero = ideacion_suicida_manejo_clinico(df_suicidio, ["GENERO"])
     ideacion_suicida_manejo_clinico_global = df_ideacion_suicida_manejo_clinico["Valor"].iloc[0]
+    suicidio_femenino = df_suicidio_genero[df_suicidio_genero["Categoria"] == "Femenino"]["Valor"].iloc[0]
+
+    df_nivel_bienestar = nivel_bienestar(df_perma, None)
+    nivel_bienestar_global = df_nivel_bienestar["Valor"].iloc[0]
 
     total_dms5 = cantidad_total_dms5(df_global)
     grupo_verde = round((salud_mental_grupo_verde(df_grupo_verde) / total_dms5), 2) * 100
@@ -31,9 +68,30 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
 
     factor_carga_enfermedad_rojo = promedio_factor_carga_enfermedad_grupo_rojo(df_global)
     factor_carga_enfermedad_amarillo = promedio_factor_carga_enfermedad_grupo_amarillo(df_global)
+    info_salud_mental_2022 = salud_mental_2022(df_salud_mental_2022)
+    factor_carga_enfermedad_rojo_2022 = info_salud_mental_2022.loc['Global', 'Factor carga de enfermedad - Manejo clínico']
+    factor_carga_enfermedad_amarillo_2022 = info_salud_mental_2022.loc['Global', 'Factor carga de enfermedad - Prevención']
+    
+    depresion_2022 = info_salud_mental_2022.loc['Global', 'depresion_manejo_clinico']
+    ansiedad_2022 = info_salud_mental_2022.loc['Global', 'ansiedad_manejo_clinico']
+    personalidad_2022 = info_salud_mental_2022.loc['Global', 'personalidad_manejo_clinico']
+    marihuana_2022 = info_salud_mental_2022.loc['Global', 'marihuana_manejo_clinico']
+    alcohol_2022 = info_salud_mental_2022.loc['Global', 'alcohol_manejo_clinico']
+    suicidio_2022 = info_salud_mental_2022.loc['Global', 'suicidio_manejo_clinico']
 
     cupit_marihuana_porcentaje = cupit_marihuana(df_global)
 
+    cantidad_salfis1 = df_salud_cronica['SALFIS01'].count()
+    
+    exig_columns = [col for col in df_exigencia.columns if col.startswith('EXIG[')]
+    cantidad_exigencia = df_exigencia[exig_columns].notna().any(axis=1).sum()  
+    
+    flow_positivo = flow_percibido_positivo(df_flow_states)
+
+    info_bienestar_2022 = bienestar_2022(df_bienestar_2022)
+    bienestar_global_2022 = info_bienestar_2022.loc["Global", "PERMA COMPLETO"]
+
+    hola = porcentaje_grupo_amarillo_por_condicion(df_global)
 
     columnas_estresores = [
       "ESTRE[ESTRE01]", "ESTRE[ESTRE02]", "ESTRE[ESTRE03]", "ESTRE[ESTRE04]", "ESTRE[ESTRE05]",
@@ -84,6 +142,13 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         3: "Ambos"
     }
 
+    etiquetas_act_fisica = {
+        1: "Nunca",
+        2: "Una vez por semana",
+        3: "Dos veces por semana",
+        4: "Tres o más veces por semana"
+    }
+
     graficos_config = {
         "escuelas_bar_chart": {
             "dataset_fn": porcentaje_por_categoria,
@@ -117,9 +182,9 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "nivel_estres_categorias": { 
             "dataset_fn": promedio_por_categoria,
-            "dataset_args": [df_valido, ["GENERO", "JORNADA", "TIPO_ALUMNO", "ESCUELA"]],
+            "dataset_args": [df_valido, ["GENERO", "JORNADA", "TIPO_ALUMNO", "ESCUELA"], 2],
             "chart_builder": crear_chart_data,
-            "chart_builder_args": ["Variable", "Porcentaje", None, True],
+            "chart_builder_args": ["Categoria_label", "Porcentaje", None, True],
         },
         "nivel_estres_sedes": {
             "dataset_fn": promedio_por_categoria,
@@ -143,7 +208,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
             "dataset_fn": porcentaje_estresores_exigencia,
             "dataset_args": [df_exigencia, ["EXIG[1]", "EXIG[2]", "EXIG[3]", "EXIG[4]", "EXIG[5]", "EXIG[6]"], "ESTRE[ESTRE18]"],
             "chart_builder": crear_chart_data,
-            "chart_builder_args": ["Categoria_label", "Porcentaje", None, True],
+            "chart_builder_args": ["Categoria_label", "Porcentaje", "Variable", True],
         },
         "exigencia_academica_inicio": {
             "dataset_fn": porcentaje_estresores_exigencia,
@@ -204,7 +269,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "depresion_manejo_clinico": {
             "dataset_fn": depresion_manejo_clinico,
-            "dataset_args": [df_depresion, ["GENERO", "JORNADA", "TIPO_ALUMNO"]],
+            "dataset_args": [df_depresion, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 2],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
@@ -216,7 +281,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "ansiedad_manejo_clinico": {
             "dataset_fn": ansiedad_manejo_clinico,
-            "dataset_args": [df_ansiedad, ["GENERO", "JORNADA", "TIPO_ALUMNO"]],
+            "dataset_args": [df_ansiedad, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 2],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
@@ -228,7 +293,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "personalidad_manejo_clinico": {
             "dataset_fn": personalidad_manejo_clinico,
-            "dataset_args": [df_personalidad, ["GENERO", "JORNADA", "TIPO_ALUMNO"]],
+            "dataset_args": [df_personalidad, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 2],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
@@ -240,7 +305,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "marihuana_manejo_clinico": {
             "dataset_fn": marihuana_manejo_clinico,
-            "dataset_args": [df_marihuana, ["GENERO", "JORNADA", "TIPO_ALUMNO"]],
+            "dataset_args": [df_marihuana, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 2],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
@@ -252,7 +317,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "alcohol_manejo_clinico": {
             "dataset_fn": alcohol_manejo_clinico,
-            "dataset_args": [df_alcohol, ["GENERO", "JORNADA", "TIPO_ALUMNO"]],
+            "dataset_args": [df_alcohol, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 2],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
@@ -264,7 +329,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "suicidio_manejo_clinico": {
             "dataset_fn": ideacion_suicida_manejo_clinico,
-            "dataset_args": [df_suicidio, ["GENERO", "JORNADA", "TIPO_ALUMNO"]],
+            "dataset_args": [df_suicidio, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 2],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
@@ -328,6 +393,84 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
+        "barreras_acceso_tratamiento": {
+            "dataset_fn": barreras_acceso_tratamiento,
+            "dataset_args": [df_barreras],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Categoria", "Porcentaje"],
+        },
+        "apoyo_percibido": {
+            "dataset_fn": apoyo_percibido,
+            "dataset_args": [df_apoyo],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Categoria", "Porcentaje", "Respuesta"]
+        },
+        "flow_states": {
+            "dataset_fn": flow_percibido,
+            "dataset_args": [df_flow_states],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Categoria", "Porcentaje", "Respuesta"]
+        },
+        "actividad_fisica_pie_chart": {
+            "dataset_fn": porcentaje_por_categoria,
+            "dataset_args": [df_act_fisica, "ACTFIS01[ACTFIS01]", etiquetas_act_fisica],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Etiqueta", "Porcentaje"],
+        },
+        "alimentacion3": {
+            "dataset_fn": alimentacion,
+            "dataset_args": [df_alimentacion, ["ALIMEN[ALIMEN03]"]],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Categoria", "Porcentaje", "Respuesta"]
+        },
+        "alimentacion": {
+            "dataset_fn": alimentacion,
+            "dataset_args": [df_alimentacion, ["ALIMEN[ALIMEN01]", "ALIMEN[ALIMEN02]", "ALIMEN[ALIMEN04]"]],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Categoria", "Porcentaje", "Respuesta"]
+        },
+        "ingesta_liquidos": {
+            "dataset_fn": ingesta_liquidos,
+            "dataset_args": [df_ing_liquidos],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Respuesta", "Porcentaje", "Categoria"]
+        },
+        "tabaquismo": {
+            "dataset_fn": tabaquismo,
+            "dataset_args": [df_tabaquismo],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Respuesta", "Porcentaje", "Categoria"]
+        },
+        "nivel_bienestar": {
+            "dataset_fn": nivel_bienestar,
+            "dataset_args": [df_perma, ["GENERO", "JORNADA", "TIPO_ALUMNO", "ESCUELA"]],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Categoria", "Valor", "Serie"],
+        },
+        "nivel_bienestar_sede": {
+            "dataset_fn": nivel_bienestar,
+            "dataset_args": [df_perma, ["SEDE"]],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Categoria", "Valor", "Serie"],
+        },
+        "perma_2022_2025_chart": {
+            "dataset_fn": perma_2022_2025,
+            "dataset_args": [df_bienestar_2022, df_perma],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Categoria", "Valor", "Serie"] 
+        },
+        "nhl_2022_2025_chart": {
+            "dataset_fn": nhl_2022_2025,
+            "dataset_args": [df_bienestar_2022, df_perma],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Categoria", "Valor", "Serie"] 
+        },
+        "porcentaje_grupo_amarillo_por_condicion": {
+            "dataset_fn": porcentaje_grupo_amarillo_por_condicion,
+            "dataset_args": [df_global],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Condición", "Porcentaje", "Serie"]
+        }
     }
 
     # Textos dinámicos — puedes agregar todos los que quieras
@@ -449,6 +592,15 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
                 "color": (255, 255, 255)
             }
         },
+        "grupo_amarillo2": {
+            "texto": f"{grupo_amarillo:.0f}%",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 60,
+                "bold": True,
+                "color": (255, 255, 255)
+            }
+        },
         "grupo_rojo": {
             "texto": f"{grupo_rojo:.0f}%",
             "estilo": {
@@ -484,7 +636,179 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
                 "bold": True,
                 "color": (255, 255, 255)
             }
+        },
+        "cantidad_salfis1": {
+            "texto": f"Nota: esta pregunta incluye un total de {cantidad_salfis1} respuestas.",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 12,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "depresion_femenino": {
+            "texto": f"Los datos presentados por sexo, jornada, tipo de alumno y sede, corresponden al porcentaje de prevalencia para cada categoría. Por ejemplo, el {depresion_femenino*100:.0f}% de las mujeres que participaron del estudio presentan síntomas clínicos de depresión.",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 12,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "ansiedad_femenino": {
+            "texto": f"Los datos presentados por sexo, jornada, tipo de alumno y sede, corresponden al porcentaje de prevalencia para cada categoría. Por ejemplo, el {ansiedad_femenino*100:.0f}% de las mujeres que participaron del estudio presentan síntomas clínicos de ansiedad generalizada.",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 12,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "personalidad_femenino": {
+            "texto": f"Los datos presentados por sexo, jornada, tipo de alumno y sede, corresponden al porcentaje de prevalencia para cada categoría. Por ejemplo, el {personalidad_femenino*100:.0f}% de las mujeres que participaron del estudio presentan síntomas clínicos de trastorno de la personalidad.",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 12,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "marihuana_femenino": {
+            "texto": f"Los datos presentados por sexo, jornada, tipo de alumno y sede, corresponden al porcentaje de prevalencia para cada categoría. Por ejemplo, el {marihuana_femenino*100:.0f}% de las mujeres que participaron del estudio presentan síntomas clínicos de consumo problemático de marihuana.",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 12,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "alcohol_femenino": {
+            "texto": f"Los datos presentados por sexo, jornada, tipo de alumno y sede, corresponden al porcentaje de prevalencia para cada categoría. Por ejemplo, el {alcohol_femenino*100:.0f}% de las mujeres que participaron del estudio presentan síntomas clínicos de consumo problemático de alcohol.",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 12,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "suicidio_femenino": {
+            "texto": f"Los datos presentados por sexo, jornada, tipo de alumno y sede, corresponden al porcentaje de prevalencia para cada categoría. Por ejemplo, el {suicidio_femenino*100:.0f}% de las mujeres que participaron del estudio presentan sospecha de  ideación suicida.",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 12,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "nota_exigencia": {
+            "texto": f"Nota: esta pregunta incluye un total de {cantidad_exigencia} respuestas.",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 12,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "nivel_bienestar_global": {
+            "texto": f"{nivel_bienestar_global:.1f}",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 60,
+                "bold": True,
+                "color": (255, 255, 255)
+            }
+        },
+        "flow_positivo": {
+            "texto": f"{flow_positivo:.0f}%",
+            "estilo": {
+                "fuente": "Arial (Cuerpo)",
+                "tamano": 66,
+                "bold": True,
+                "color": (0, 0, 0)
+            }
+        },
+        "factor_carga_enfermedad_amarillo_2022": {
+            "texto": f"{factor_carga_enfermedad_amarillo_2022:.0f}",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 25,
+                "bold": True,
+                "color": (255, 255, 255)
+            }
+        },
+        "factor_carga_enfermedad_rojo_2022": {
+            "texto": f"{factor_carga_enfermedad_rojo_2022:.0f}",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 25,
+                "bold": True,
+                "color": (255, 255, 255)
+            }
+        },
+        "depresion_2022": {
+            "texto": f"{depresion_2022*100:.0f}%",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 25,
+                "bold": True,
+                "color": (255, 255, 255)
+            }
+        },
+        "ansiedad_2022": {
+            "texto": f"{ansiedad_2022*100:.0f}%",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 25,
+                "bold": True,
+                "color": (255, 255, 255)
+            }
+        },
+        "personalidad_2022": {
+            "texto": f"{personalidad_2022*100:.0f}%",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 25,
+                "bold": True,
+                "color": (255, 255, 255)
+            }
+        },
+        "marihuana_2022": {
+            "texto": f"{marihuana_2022*100:.0f}%",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 25,
+                "bold": True,
+                "color": (255, 255, 255)
+            }
+        },
+        "alcohol_2022": {
+            "texto": f"{alcohol_2022*100:.0f}%",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 25,
+                "bold": True,
+                "color": (255, 255, 255)
+            }
+        },
+        "suicidio_2022": {
+            "texto": f"{suicidio_2022*100:.0f}%",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 25,
+                "bold": True,
+                "color": (255, 255, 255)
+            }
+        },
+        "bienestar_global_2022": {
+            "texto": f"{bienestar_global_2022:.1f}",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 25,
+                "bold": True,
+                "color": (255, 255, 255)
+            }
         }
+        
     }
 
     actualizar_graficos(template_path, output_path, graficos_config, textos_config)
