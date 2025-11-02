@@ -90,6 +90,12 @@ LABELS_FLOW_ITEMS = {
     "FLOW[FLOW12]": "Cuando hablo de esta actividad, siento una emoción tan profunda que quiero compartirla.",
 }
 
+LABELS_CONDICION_ACADEMICA = {
+    "CONDACAD[CON01]": "En mi casa, cuento con un espacio adecuado para estudiar o hacer mis trabajos",
+    "CONDACAD[CON02]": "En Duoc UC, cuento con un espacio adecuado para estudiar o hacer mis trabajos",
+    "CONDACAD[CON03]": "Necesito apoyo y/o capacitación para utilizar las plataformas o herramientas tecnológicas requeridas en mi carrera (softwares, plataforma estudiantil, programas, etc.)"
+}
+
 # Este diccionario define tu regla de agrupación
 FLOW_GROUPING_MAP = {
     1: "ap negativas",
@@ -99,6 +105,12 @@ FLOW_GROUPING_MAP = {
     5: "ap neutras",
     6: "ap positivas",
     7: "ap positivas",
+}
+
+LABELS_APPVI02 = {
+    "APPVI02[1]": "Reserva de hora psicológica",
+    "APPVI02[2]": "Inscripción en charlas de salud mental",
+    "APPVI02[3]": "Contenidos en salud mental"
 }
 
 def porcentaje_por_categoria(df, columna, etiquetas=None):
@@ -167,6 +179,7 @@ def porcentaje_estresores(df, columnas, grupo=None, top=None):
     df_temp = df.copy()
     df_temp["marco_algo"] = df_temp[columnas].notna().any(axis=1)
     df_temp = df_temp[df_temp["marco_algo"]]
+    print(len(df_temp))
 
     resultados = []
 
@@ -205,6 +218,7 @@ def porcentaje_estresores(df, columnas, grupo=None, top=None):
             df_resultado = df_resultado.groupby("Variable", group_keys=False).tail(top)
         else:
             df_resultado = df_resultado.tail(top)
+
 
     return df_resultado
 
@@ -339,7 +353,7 @@ def porcentaje_salud_cronica(df, columna_item, etiquetas):
     
     return pd.DataFrame(resultados)
 
-def depresion_manejo_clinico(df, group_cols=None, espacio=1):
+def depresion_manejo_clinico(df, group_cols=None, espacio=0):
     """
     Calcula el porcentaje de malestar clínico por depresión,
     agregando espaciadores entre grupos.
@@ -412,7 +426,7 @@ def depresion_manejo_clinico(df, group_cols=None, espacio=1):
     return df_resultado
 
 
-def ansiedad_manejo_clinico(df, group_cols=None, espacio=1):
+def ansiedad_manejo_clinico(df, group_cols=None, espacio=0):
     gad_cols = [f"GAD7[GAD0{i}]" for i in range(1, 8)]
     ed_cols = ["DSM5[DSM" + str(i).zfill(2) + "]" for i in range(1, 23)] + ["ED15[ED01]", "ED15[ED02]"]
     df_validos = df.dropna(subset=gad_cols).copy()
@@ -459,7 +473,7 @@ def ansiedad_manejo_clinico(df, group_cols=None, espacio=1):
         
     return pd.DataFrame(resultados)
 
-def personalidad_manejo_clinico(df, group_cols=None, espacio=1):
+def personalidad_manejo_clinico(df, group_cols=None, espacio=0):
     lpf_cols = ["LPFS[LPFS01]", "LPFS[LPFS02]", "LPFS[LPFS03]", "LPFS[LPFS04]", "LPFS[LPFS05]", "LPFS[LPFS06]", "LPFS[LPFS07]", "LPFS[LPFS08]", "LPFS[LPFS09]","LPFS[LPFS10]", "LPFS[LPFS11]", "LPFS[LPFS12]"]
     ed_cols = ["DSM5[DSM" + str(i).zfill(2) + "]" for i in range(1, 23)] + ["ED15[ED01]", "ED15[ED02]"]
     df_validos = df.dropna(subset=lpf_cols).copy()
@@ -510,7 +524,7 @@ def clasificar_marihuana(x):
         return "No"
     return pd.NA
 
-def marihuana_manejo_clinico(df, group_cols=None, espacio=1):
+def marihuana_manejo_clinico(df, group_cols=None, espacio=0):
     marihuana_cols = [f"CAST[CAST0{i}]" for i in range(1, 7)]
     ed_cols = ["DSM5[DSM" + str(i).zfill(2) + "]" for i in range(1, 23)] + ["ED15[ED01]", "ED15[ED02]"]
     df_validos = df.dropna(subset=marihuana_cols).copy()
@@ -551,7 +565,7 @@ def marihuana_manejo_clinico(df, group_cols=None, espacio=1):
                     resultados.append(spacer_row)
     return pd.DataFrame(resultados)
 
-def alcohol_manejo_clinico(df, group_cols=None, espacio=1):
+def alcohol_manejo_clinico(df, group_cols=None, espacio=0):
     audit_cols = ["AUDIT01[AUDIT01]", "AUDIT02[AUDIT02]", "AUDIT38[AUDIT03]", "AUDIT38[AUDIT04]", "AUDIT38[AUDIT05]", "AUDIT38[AUDIT06]", "AUDIT38[AUDIT07]", "AUDIT38[AUDIT08]", "AUDIT910[AUDIT09]", "AUDIT910[AUDIT10]"]
     ed_cols = ["DSM5[DSM" + str(i).zfill(2) + "]" for i in range(1, 23)] + ["ED15[ED01]", "ED15[ED02]"]
     df_validos = df.dropna(subset=audit_cols).copy()
@@ -592,7 +606,7 @@ def alcohol_manejo_clinico(df, group_cols=None, espacio=1):
                     resultados.append(spacer_row)
     return pd.DataFrame(resultados)
 
-def ideacion_suicida_manejo_clinico(df, group_cols=None, espacio=1):
+def ideacion_suicida_manejo_clinico(df, group_cols=None, espacio=0):
     idea_cols = ["PHQ09[PHQ09F]"]
     df_validos = df.dropna(subset=idea_cols).copy()
     if df_validos.empty:
@@ -670,7 +684,6 @@ def salud_mental_grupo_verde(df):
             posible += 1
         if posible == 16:
             grupo_verde_total += 1
-    print("grupo verde es: ", grupo_verde_total)
     return grupo_verde_total
 
 
@@ -810,12 +823,10 @@ def porcentaje_para_barras_apiladas(df, columnas, etiquetas_respuesta=None, etiq
     resultados = []
 
     for col in columnas:
-        conteo = df[col].value_counts(normalize=True)  # proporción por respuesta 
+        conteo = df[col].value_counts(normalize=True)
         for respuesta, porcentaje in conteo.items():
-            # Mapear etiqueta de respuesta si existe
             etiqueta_resp = etiquetas_respuesta.get(respuesta, respuesta) if etiquetas_respuesta else respuesta
             
-            # Mapear etiqueta de categoría si existe
             etiqueta_cat = etiquetas_categoria.get(col, col) if etiquetas_categoria else col
             
             resultados.append({
@@ -1194,11 +1205,15 @@ def perma_2022_2025(df_2022, df_2025):
                 resultados.append({
                     "Categoria": factor,
                     "Serie": "2022",
-                    "Valor": round(valor_normalizado, 2)
+                    "Valor": round(valor_normalizado, 3)
                 })
 
     # --- 2. PROCESAR DATOS 2025 ---
-    df_2025_temp = df_2025.copy()
+    
+    perma_cols = [f"PERMA1[PER{i:02d}]" for i in range(1, 21)] + ["PERMA21", "PERMA22", "PERMA23"]
+    perma_cols = [c for c in perma_cols if c in df_2025.columns]
+
+    df_2025_temp = df_2025.dropna(subset=perma_cols).copy()
     
     for factor, indices in PERMA_FACTORS.items():
         # Construir nombres de columnas PERMA para 2025
@@ -1211,7 +1226,6 @@ def perma_2022_2025(df_2022, df_2025):
             
             if col_name in df_2025_temp.columns:
                 cols_perma_2025.append(col_name)
-        
         if cols_perma_2025:
             # Calcular el promedio de las columnas del factor para 2025
             # .mean(skipna=True) en el df_validos ya excluye filas con NaN en PERMA
@@ -1222,7 +1236,7 @@ def perma_2022_2025(df_2022, df_2025):
                 resultados.append({
                     "Categoria": factor,
                     "Serie": "2025",
-                    "Valor": round(valor_normalizado, 2)
+                    "Valor": round(valor_normalizado, 3)
                 })
 
     # 3. CONSOLIDAR Y RETORNAR
@@ -1257,7 +1271,10 @@ def nhl_2022_2025(df_2022, df_2025):
                     "Serie": "2022",
                     "Valor": round(valor_normalizado, 3)
                 })
-    df_2025_temp = df_2025.copy()
+    perma_cols = [f"PERMA1[PER{i:02d}]" for i in range(1, 21)] + ["PERMA21", "PERMA22", "PERMA23"]
+    perma_cols = [c for c in perma_cols if c in df_2025.columns]
+
+    df_2025_temp = df_2025.dropna(subset=perma_cols).copy()
     for factor, indices in NHL_FACTORS.items():
         cols_nhl_2025 = []
         for i in indices:
@@ -1358,4 +1375,413 @@ def porcentaje_grupo_amarillo_por_condicion(df):
         resultados.append({"Condición": nombre, "Porcentaje": round(porcentaje, 3)})
 
     df_resultado = pd.DataFrame(resultados)
+    return df_resultado
+
+def porcentaje_respuestas_appvivo(df, columnas, labels_dict=LABELS_APPVI02, col_appvi01="APPVI01"):
+    resultados = []
+    total_yes = (df[col_appvi01] == "Y").sum()
+    
+    for col in columnas:
+        if col in df.columns:
+            count = (df[col] == "Y").sum()
+            pct = count / total_yes
+        else:
+            pct = 0.0
+        
+        label = labels_dict.get(col, col) if labels_dict else col
+        resultados.append({
+            "CategoriaLabel": label,
+            "Porcentaje": pct,
+            "Variable": "Sí"
+        })
+    
+    df_resultado = pd.DataFrame(resultados)
+    df_resultado["Porcentaje"] = df_resultado["Porcentaje"].round(2)
+    return df_resultado.rename(columns={"Variable": "Categoria"})
+
+def embajador_salud_mental3(df) -> pd.DataFrame:
+    columna_ingesta = "EMB07[EMBSM07]"
+    
+    etiquetas_respuestas = {
+        0: "0",
+        1: "Entre 1 y 3",
+        2: "Entre 4 y 6",
+        3: "Entre 7 y 9",
+        4: "10 o más"
+    }
+    
+    categoria_nombre = ""
+    
+    orden_respuestas = [
+        "0",
+        "Entre 1 y 3",
+        "Entre 4 y 6",
+        "Entre 7 y 9",
+        "10 o más"
+    ]
+
+    if columna_ingesta not in df.columns:
+        return pd.DataFrame(columns=['Categoria', 'Respuesta', 'Porcentaje'])
+    
+    conteo = df[columna_ingesta].value_counts(normalize=True) 
+    
+    resultados = []
+    for respuesta_val, porcentaje in conteo.items():
+        etiqueta_resp = etiquetas_respuestas.get(respuesta_val, respuesta_val) 
+        
+        resultados.append({
+            "Categoria": categoria_nombre, 
+            "Respuesta": etiqueta_resp, 
+            "Porcentaje": round(porcentaje, 4)
+        })
+        
+    df_resultado = pd.DataFrame(resultados)
+    
+    df_resultado_filtrado = df_resultado[df_resultado['Respuesta'].isin(orden_respuestas)].copy()
+    
+    df_resultado_filtrado["Respuesta"] = pd.Categorical(
+        df_resultado_filtrado["Respuesta"],
+        categories=orden_respuestas,
+        ordered=True
+    )
+    
+    df_resultado_final = df_resultado_filtrado.sort_values(
+        by=['Categoria', 'Respuesta']
+    ).reset_index(drop=True)
+    
+    return df_resultado_final
+
+def embajador_salud_mental4(df) -> pd.DataFrame:
+    columna_ingesta = "EMB08[EMBSM08]"
+    
+    etiquetas_respuestas = {
+        1: "Muy insatisfecho/a",
+        2: "Insatisfecho/a",
+        3: "Neutro",
+        4: "Satisfecho/a",
+        5: "Muy satisfecho/a"
+    }
+    
+    categoria_nombre = ""
+    
+    orden_respuestas = [
+        "Muy insatisfecho/a",
+        "Insatisfecho/a",
+        "Neutro",
+        "Satisfecho/a",
+        "Muy satisfecho/a"
+    ]
+
+    if columna_ingesta not in df.columns:
+        return pd.DataFrame(columns=['Categoria', 'Respuesta', 'Porcentaje'])
+    
+    conteo = df[columna_ingesta].value_counts(normalize=True) 
+    
+    resultados = []
+    for respuesta_val, porcentaje in conteo.items():
+        etiqueta_resp = etiquetas_respuestas.get(respuesta_val, respuesta_val) 
+        
+        resultados.append({
+            "Categoria": categoria_nombre, 
+            "Respuesta": etiqueta_resp, 
+            "Porcentaje": round(porcentaje, 4)
+        })
+        
+    df_resultado = pd.DataFrame(resultados)
+    
+    df_resultado_filtrado = df_resultado[df_resultado['Respuesta'].isin(orden_respuestas)].copy()
+    
+    df_resultado_filtrado["Respuesta"] = pd.Categorical(
+        df_resultado_filtrado["Respuesta"],
+        categories=orden_respuestas,
+        ordered=True
+    )
+    
+    df_resultado_final = df_resultado_filtrado.sort_values(
+        by=['Categoria', 'Respuesta']
+    ).reset_index(drop=True)
+    
+    return df_resultado_final
+
+def embajador_salud_mental7(df) -> pd.DataFrame:
+    columna_ingesta = "EMB04"
+    etiquetas_respuestas = {
+        1: "Poco tiempo",
+        2: "Falta información",
+        3: "No es importante",
+        4: "Es para profesionales",
+        5: "No creo ser bueno/a",
+        6: "Otra razón"
+    }
+    
+    categoria_nombre = ""
+    
+    orden_respuestas = [
+        "Poco tiempo",
+        "No creo ser bueno/a",
+        "Es para profesionales",
+        "No es importante",
+        "Falta información",
+        "Otra razón"
+    ]
+
+    if columna_ingesta not in df.columns:
+        return pd.DataFrame(columns=['Categoria', 'Respuesta', 'Porcentaje'])
+    
+    conteo = df[columna_ingesta].value_counts(normalize=True) 
+    
+    resultados = []
+    for respuesta_val, porcentaje in conteo.items():
+        etiqueta_resp = etiquetas_respuestas.get(respuesta_val, respuesta_val) 
+        
+        resultados.append({
+            "Categoria": categoria_nombre, 
+            "Respuesta": etiqueta_resp, 
+            "Porcentaje": round(porcentaje, 4)
+        })
+        
+    df_resultado = pd.DataFrame(resultados)
+    
+    df_resultado_filtrado = df_resultado[df_resultado['Respuesta'].isin(orden_respuestas)].copy()
+    
+    df_resultado_filtrado["Respuesta"] = pd.Categorical(
+        df_resultado_filtrado["Respuesta"],
+        categories=orden_respuestas,
+        ordered=True
+    )
+    
+    df_resultado_final = df_resultado_filtrado.sort_values(
+        by=['Categoria', 'Respuesta']
+    ).reset_index(drop=True)
+    
+    return df_resultado_final
+
+def embajador_salud_mental9(df) -> pd.DataFrame:
+    columna_ingesta = "EMB11"
+    etiquetas_respuestas = {
+        1: "Si",
+        2: "No",
+        3: "No lo recuerdo",
+    }
+    
+    categoria_nombre = ""
+    
+    orden_respuestas = [
+        "Si",
+        "No",
+        "No lo recuerdo",
+    ]
+
+    if columna_ingesta not in df.columns:
+        return pd.DataFrame(columns=['Categoria', 'Respuesta', 'Porcentaje'])
+    
+    conteo = df[columna_ingesta].value_counts(normalize=True) 
+    
+    resultados = []
+    for respuesta_val, porcentaje in conteo.items():
+        etiqueta_resp = etiquetas_respuestas.get(respuesta_val, respuesta_val) 
+        
+        resultados.append({
+            "Categoria": categoria_nombre, 
+            "Respuesta": etiqueta_resp, 
+            "Porcentaje": round(porcentaje, 4)
+        })
+        
+    df_resultado = pd.DataFrame(resultados)
+    
+    df_resultado_filtrado = df_resultado[df_resultado['Respuesta'].isin(orden_respuestas)].copy()
+    
+    df_resultado_filtrado["Respuesta"] = pd.Categorical(
+        df_resultado_filtrado["Respuesta"],
+        categories=orden_respuestas,
+        ordered=True
+    )
+    
+    df_resultado_final = df_resultado_filtrado.sort_values(
+        by=['Categoria', 'Respuesta']
+    ).reset_index(drop=True)
+    
+    return df_resultado_final
+
+def atencion_psicologica2(df) -> pd.DataFrame:
+    columna_ingesta = "ATPSIC2[ATPSIC02]"
+    etiquetas_respuestas = {
+        1: "Muy insatisfecho/a",
+        2: "Insatisfecho/a",
+        3: "Neutro",
+        4: "Satisfecho/a",
+        5: "Muy satisfecho/a"
+    }
+    
+    categoria_nombre = ""
+    
+    orden_respuestas = [
+        "Muy insatisfecho/a",
+        "Insatisfecho/a",
+        "Neutro",
+        "Satisfecho/a",
+        "Muy satisfecho/a"
+    ]
+
+
+    if columna_ingesta not in df.columns:
+        return pd.DataFrame(columns=['Categoria', 'Respuesta', 'Porcentaje'])
+    
+    conteo = df[columna_ingesta].value_counts(normalize=True) 
+    
+    resultados = []
+    for respuesta_val, porcentaje in conteo.items():
+        etiqueta_resp = etiquetas_respuestas.get(respuesta_val, respuesta_val) 
+        
+        resultados.append({
+            "Categoria": categoria_nombre, 
+            "Respuesta": etiqueta_resp, 
+            "Porcentaje": round(porcentaje, 4)
+        })
+        
+    df_resultado = pd.DataFrame(resultados)
+    
+    df_resultado_filtrado = df_resultado[df_resultado['Respuesta'].isin(orden_respuestas)].copy()
+    
+    df_resultado_filtrado["Respuesta"] = pd.Categorical(
+        df_resultado_filtrado["Respuesta"],
+        categories=orden_respuestas,
+        ordered=True
+    )
+    
+    df_resultado_final = df_resultado_filtrado.sort_values(
+        by=['Categoria', 'Respuesta']
+    ).reset_index(drop=True)
+    
+    return df_resultado_final
+
+def atencion_psicologica5(df) -> pd.DataFrame:
+    columna_ingesta = "BIM02[BIM02]"
+    etiquetas_respuestas = {
+        1: "Nada",
+        2: "Poco",
+        3: "Algo",
+        4: "Bastante",
+        5: "Mucho"
+    }
+    
+    categoria_nombre = ""
+    
+    orden_respuestas = [
+        "Nada",
+        "Poco",
+        "Algo",
+        "Bastante",
+        "Mucho"
+    ]
+
+    if columna_ingesta not in df.columns:
+        return pd.DataFrame(columns=['Categoria', 'Respuesta', 'Porcentaje'])
+    
+    conteo = df[columna_ingesta].value_counts(normalize=True) 
+    
+    resultados = []
+    for respuesta_val, porcentaje in conteo.items():
+        etiqueta_resp = etiquetas_respuestas.get(respuesta_val, respuesta_val) 
+        
+        resultados.append({
+            "Categoria": categoria_nombre, 
+            "Respuesta": etiqueta_resp, 
+            "Porcentaje": round(porcentaje, 4)
+        })
+        
+    df_resultado = pd.DataFrame(resultados)
+    
+    df_resultado_filtrado = df_resultado[df_resultado['Respuesta'].isin(orden_respuestas)].copy()
+    
+    df_resultado_filtrado["Respuesta"] = pd.Categorical(
+        df_resultado_filtrado["Respuesta"],
+        categories=orden_respuestas,
+        ordered=True
+    )
+    
+    df_resultado_final = df_resultado_filtrado.sort_values(
+        by=['Categoria', 'Respuesta']
+    ).reset_index(drop=True)
+    
+    return df_resultado_final
+
+def condicion_academica(df, columnas):
+    etiquetas_condicion_resp = {
+        1: "Muy en desacuerdo",
+        2: "En desacuerdo",
+        3: "De acuerdo",
+        4: "Muy de acuerdo"
+    }
+
+    etiquetas_condicion_cat = {
+        "CONDACAD[CON01]": "En mi casa, cuento con un espacio adecuado para estudiar o hacer mis trabajos",
+        "CONDACAD[CON02]": "En Duoc UC, cuento con un espacio adecuado para estudiar o hacer mis trabajos",
+        "CONDACAD[CON03]": "Necesito apoyo y/o capacitación para utilizar las plataformas o herramientas tecnológicas requeridas en mi carrera (softwares, plataforma estudiantil, programas, etc.)",
+    }
+    
+    orden_respuestas = [
+        "Muy en desacuerdo",
+        "En desacuerdo",
+        "De acuerdo",
+        "Muy de acuerdo"
+    ]
+    
+    if columnas is None:
+        columnas_a_procesar = [
+            col for col in df.columns 
+            if col.startswith("CONDACAD[") and col in etiquetas_condicion_cat
+        ]
+    else:
+        columnas_a_procesar = [
+            col for col in columnas 
+            if col in etiquetas_condicion_cat and col in df.columns
+        ]
+    
+    if not columnas_a_procesar:
+        return pd.DataFrame(columns=['Categoria', 'Respuesta', 'Porcentaje'])
+    
+    df_resultado = porcentaje_para_barras_apiladas(
+        df,
+        columnas=columnas_a_procesar,
+        etiquetas_respuesta=etiquetas_condicion_resp,
+        etiquetas_categoria=etiquetas_condicion_cat,
+    )
+    
+    
+    df_resultado_filtrado = df_resultado[df_resultado['Respuesta'].isin(orden_respuestas)].copy()
+    
+    df_resultado_filtrado["Respuesta"] = pd.Categorical(
+        df_resultado_filtrado["Respuesta"],
+        categories=orden_respuestas,
+        ordered=True
+    )
+    
+    df_resultado_final = df_resultado_filtrado.sort_values(
+        by=['Categoria', 'Respuesta']
+    ).reset_index(drop=True)
+    
+    return df_resultado_final
+
+def porcentaje_seleccion_multiple_y(df, columnas, labels_dict=None, since=None):
+    resultados = []
+    columnas_existentes = [col for col in columnas if col in df.columns]
+    total_yes_responders = df[columnas_existentes].eq("Y").any(axis=1).sum()
+
+    if since == 1:
+        columnas_existentes = columnas_existentes[0:5]
+    else:
+        columnas_existentes = columnas_existentes[5:]
+    for col in columnas_existentes:
+        count = (df[col] == "Y").sum()
+        pct = (count / total_yes_responders) if total_yes_responders > 0 else 0.0
+        label = labels_dict.get(col, col) if labels_dict else col
+        resultados.append({
+            "CategoriaLabel": label,
+            "Porcentaje": pct,
+            "Variable": "Sí"
+        })
+
+    df_resultado = pd.DataFrame(resultados)
+    df_resultado["Porcentaje"] = df_resultado["Porcentaje"].round(2)
     return df_resultado

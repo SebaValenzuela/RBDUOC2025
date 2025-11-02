@@ -1,7 +1,7 @@
 from data.datasets import (
-    flow_percibido, apoyo_percibido, barreras_acceso_tratamiento,
+    atencion_psicologica2, atencion_psicologica5, condicion_academica, embajador_salud_mental3, embajador_salud_mental4, embajador_salud_mental4, embajador_salud_mental7, flow_percibido, apoyo_percibido, barreras_acceso_tratamiento,
     ansiedad_manejo_clinico, cupit_marihuana,
-    porcentaje_para_barras_apiladas, cantidad_total_dms5,
+    porcentaje_para_barras_apiladas, cantidad_total_dms5, porcentaje_seleccion_multiple_y,
     promedio_factor_carga_enfermedad_grupo_rojo, promedio_factor_carga_enfermedad_grupo_amarillo,
     marihuana_manejo_clinico,
     personalidad_manejo_clinico, porcentaje_afrontamiento, porcentaje_estresores_exigencia,
@@ -12,14 +12,16 @@ from data.datasets import (
     ideacion_suicida_manejo_clinico, salud_mental_grupo_verde, salud_mental_grupo_rojo,
     alimentacion, ingesta_liquidos, tabaquismo, nivel_bienestar, flow_percibido_positivo,
     salud_mental_2022, bienestar_2022, perma_2022_2025, nhl_2022_2025,
-    porcentaje_grupo_amarillo_por_condicion
+    porcentaje_grupo_amarillo_por_condicion, porcentaje_respuestas_appvivo, embajador_salud_mental9
 )
 from plots.charts import crear_chart_data
+from plots.wordclouds import crear_wordcloud
 from plots.pptx_updater import actualizar_graficos
 
 def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, df_estresores, df_exigencia, df_afrontamiento, df_procrastinacion, df_salud_cronica, df_depresion,
                     df_ansiedad, df_personalidad, df_marihuana, df_alcohol, df_suicidio, df_grupo_verde, df_grupo_rojo, df_necesidad_tratamiento, df_barreras, df_apoyo,
-                    df_flow_states, df_act_fisica, df_alimentacion, df_ing_liquidos, df_tabaquismo, df_perma, df_salud_mental_2022, df_bienestar_2022):
+                    df_flow_states, df_act_fisica, df_alimentacion, df_ing_liquidos, df_tabaquismo, df_perma, df_salud_mental_2022, df_bienestar_2022, df_app_vivo,
+                    df_embajador, df_atencion_psicologica, df_personas_cuidado, df_situacion_empleo, df_condicion_academica, df_espacios_sedes, df_encuesta_2022, df_palabras_normalizadas_wordcloud):
     template_path = "reports/templates/template-prueba.pptx"
     output_path = "reports/output/reporte-generado.pptx"
 
@@ -91,7 +93,30 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
     info_bienestar_2022 = bienestar_2022(df_bienestar_2022)
     bienestar_global_2022 = info_bienestar_2022.loc["Global", "PERMA COMPLETO"]
 
-    hola = porcentaje_grupo_amarillo_por_condicion(df_global)
+    respuestas_appvivo = df_app_vivo.iloc[4856:]["APPVI01"].notna().sum()
+
+    respuestas_embajador1 = df_embajador[df_embajador["EMB01"].notna()]["EMB01"].count()
+    respuestas_embajador2 = df_embajador[df_embajador["EMB06[EMBSM06]"].notna()]["EMB06[EMBSM06]"].count()
+    respuestas_embajador3 = df_embajador[df_embajador["EMB01"] == "Y"]["EMB06[EMBSM06]"].count()
+    respuestas_embajador4 = df_embajador[df_embajador["EMB03"].notna()]["EMB03"].count()
+    respuestas_embajador5 = df_embajador[df_embajador["EMB04"].notna()]["EMB04"].count()
+    respuestas_embajador6 = df_embajador[df_embajador["EMB10"].notna()]["EMB10"].count()
+    respuestas_embajador7 = df_embajador[df_embajador["EMB10"] == "Y"]["EMB11"].count()
+
+    respuestas_atencion_psiscologica1 = df_atencion_psicologica[df_atencion_psicologica["ATPSIC01"].notna()]["ATPSIC01"].count()
+
+    respuestas_bienestar_integral = df_atencion_psicologica[df_atencion_psicologica["BIM01"].notna()]["BIM01"].count()
+
+    respuestas_personas_cuidado1 = df_personas_cuidado[df_personas_cuidado["CUIDA01"].notna()]["CUIDA01"].count()
+    respuestas_personas_cuidado2 = df_personas_cuidado[df_personas_cuidado["CUIDA02"].notna()]["CUIDA02"].count()
+
+    respuestas_empleo = df_situacion_empleo[df_situacion_empleo["EMPLE01"].notna()]["EMPLE01"].count()
+
+    columnas = ["CONDACAD[CON01]", "CONDACAD[CON02]", "CONDACAD[CON03]"]
+    respuestas_condicion_academica = df_condicion_academica[columnas].notna().any(axis=1).sum()
+
+    columnas_descom = [f"DESCOM01[{i}]" for i in range(1, 12)]
+    respuestas_espacios_sedes = df_espacios_sedes[columnas_descom].notna().any(axis=1).sum()
 
     columnas_estresores = [
       "ESTRE[ESTRE01]", "ESTRE[ESTRE02]", "ESTRE[ESTRE03]", "ESTRE[ESTRE04]", "ESTRE[ESTRE05]",
@@ -113,7 +138,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         4: "Prefiero no responder"
     }
 
-    etiquetas_css = {
+    etiquetas_si__no = {
         "Y": "Sí",
         "N": "No"
     }
@@ -148,6 +173,84 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         3: "Dos veces por semana",
         4: "Tres o más veces por semana"
     }
+
+    etiquetas_embajador2 = {
+        1: "Nada/Poco",
+        2: "Nada/Poco",
+        3: "Algo",
+        4: "Mucho/Bastante",
+        5: "Mucho/Bastante"
+    }
+
+    etiquetas_cuidado1 = {
+        1: "No, ninguna.",
+        2: "Sí, hijo/a(s).",
+        3: "Sí, hermano/a o sobrino/a.",
+        4: "Sí, adulto/a mayor.",
+        5: "Sí, persona enferma o con alguna discapacidad."
+    }
+
+    etiquetas_cuidado2 = {
+        1: "Sí, de algún familiar",
+        2: "Sí, de su padre/madre",
+        3: "Sí, una institución de cuidados (sala cuna, jardín, guardería, escuela, etc.)",
+        4: "Sí, pago para servicios de cuidado en casa (servicio doméstico, enfermera, etc.)",
+        5: "No cuento con apoyo"
+    }
+
+    etiquetas_empleo = {
+        0: "No trabajo ningún día",
+        1: "Solo fines de semana",
+        2: "Trabajo solo algunos días a la semana",
+        3: "Media jornada todos los días",
+        4: "Trabajo de jornada completa todos los días"
+    }
+
+    etiquetas_espacios_sedes = {
+        "DESCOM01[1]": "Casino",
+        "DESCOM01[2]": "Biblioteca",
+        "DESCOM01[3]": "Punto estudiantil",
+        "DESCOM01[4]": "Espacios deportivos (si aplica)",
+        "DESCOM01[5]": "Áreas verdes (si aplica)",
+        "DESCOM01[6]": "Otros espacios cercanos a tu sede (plazas, malls, etc.)",
+        "DESCOM01[7]": "Portal VIVO Duoc",
+        "DESCOM01[8]": "AVA (Ambiente Virtual de Aprendizaje)",
+        "DESCOM01[9]": "Correo Institucional",
+        "DESCOM01[10]": "Portal de acceso a clases",
+        "DESCOM01[11]": "No utilizo mucho los espacios de Duoc UC",
+    }
+
+    columnas_para_wordcloud = ["PRAB01[PRA01]", "PRAB01[PRA02]", "PRAB01[PRA03]"]
+
+    buffer_wc_global = crear_wordcloud(
+        df_global, 
+        columnas_para_wordcloud,
+        mask_path="plots/images/cloud_mask.png"
+    )
+
+    buffer_wc_femenino = crear_wordcloud(
+        df_global[df_global["GENERO"] == "Femenino"],
+        columnas_para_wordcloud,
+        mask_path="plots/images/cloud_mask.png"
+    )
+
+    buffer_wc_masculino = crear_wordcloud(
+        df_global[df_global["GENERO"] == "Masculino"],
+        columnas_para_wordcloud,
+        mask_path="plots/images/cloud_mask.png"
+    )
+
+    buffer_wc_2022 = crear_wordcloud(
+        df_encuesta_2022,
+        columnas_para_wordcloud,
+        mask_path="plots/images/cloud_mask.png"
+    )
+
+    buffer_wc_2025 = crear_wordcloud(
+        df_global,
+        columnas_para_wordcloud,
+        mask_path="plots/images/cloud_mask.png"
+    )
 
     graficos_config = {
         "escuelas_bar_chart": {
@@ -269,7 +372,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "depresion_manejo_clinico": {
             "dataset_fn": depresion_manejo_clinico,
-            "dataset_args": [df_depresion, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 2],
+            "dataset_args": [df_depresion, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 1],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
@@ -281,7 +384,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "ansiedad_manejo_clinico": {
             "dataset_fn": ansiedad_manejo_clinico,
-            "dataset_args": [df_ansiedad, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 2],
+            "dataset_args": [df_ansiedad, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 1],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
@@ -293,7 +396,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "personalidad_manejo_clinico": {
             "dataset_fn": personalidad_manejo_clinico,
-            "dataset_args": [df_personalidad, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 2],
+            "dataset_args": [df_personalidad, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 1],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
@@ -305,7 +408,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "marihuana_manejo_clinico": {
             "dataset_fn": marihuana_manejo_clinico,
-            "dataset_args": [df_marihuana, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 2],
+            "dataset_args": [df_marihuana, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 1],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
@@ -317,7 +420,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "alcohol_manejo_clinico": {
             "dataset_fn": alcohol_manejo_clinico,
-            "dataset_args": [df_alcohol, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 2],
+            "dataset_args": [df_alcohol, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 1],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
@@ -329,7 +432,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "suicidio_manejo_clinico": {
             "dataset_fn": ideacion_suicida_manejo_clinico,
-            "dataset_args": [df_suicidio, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 2],
+            "dataset_args": [df_suicidio, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 1],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
@@ -347,37 +450,37 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "ideacion_suicida_2_pie_chart": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_suicidio, "CSS01", etiquetas_css],
+            "dataset_args": [df_suicidio, "CSS01", etiquetas_si__no],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
         "ideacion_suicida_3_pie_chart": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_suicidio, "CSS02", etiquetas_css],
+            "dataset_args": [df_suicidio, "CSS02", etiquetas_si__no],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
         "ideacion_suicida_4_bar_chart": {
             "dataset_fn": porcentaje_para_barras_apiladas,
-            "dataset_args": [df_suicidio, ["CSS03", "CSS04", "CSS05"], etiquetas_css, etiquetas_categoria],
+            "dataset_args": [df_suicidio, ["CSS03", "CSS04", "CSS05"], etiquetas_si__no, etiquetas_categoria],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Porcentaje", "Respuesta"]
         },
         "ideacion_suicida_5_pie_chart": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_suicidio, "CSS06", etiquetas_css],
+            "dataset_args": [df_suicidio, "CSS06", etiquetas_si__no],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
         "nectto_pie_chart": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_necesidad_tratamiento, "NECTTO", etiquetas_css],
+            "dataset_args": [df_necesidad_tratamiento, "NECTTO", etiquetas_si__no],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
         "acctto_pie_chart": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_necesidad_tratamiento, "ACCTTO", etiquetas_css],
+            "dataset_args": [df_necesidad_tratamiento, "ACCTTO", etiquetas_si__no],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
@@ -470,7 +573,157 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
             "dataset_args": [df_global],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Condición", "Porcentaje", "Serie"]
-        }
+        },
+        "porcentaje_app_vivo1": {
+            "dataset_fn": porcentaje_por_categoria,
+            "dataset_args": [df_app_vivo, "APPVI01", etiquetas_si__no],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Etiqueta", "Porcentaje",]
+        },
+        "porcentaje_app_vivo3": {
+            "dataset_fn": porcentaje_por_categoria,
+            "dataset_args": [df_app_vivo, "APPVI03", etiquetas_si__no],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Etiqueta", "Porcentaje"]
+        },
+        "porcentaje_app_vivo2": {
+            "dataset_fn": porcentaje_respuestas_appvivo,
+            "dataset_args": [df_global.iloc[4856:], ["APPVI02[1]", "APPVI02[2]", "APPVI02[3]"]],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["CategoriaLabel", "Porcentaje", "Variable"]
+        },
+        "embajador_salud_mental1": {
+            "dataset_fn": porcentaje_por_categoria,
+            "dataset_args": [df_embajador, "EMB01", etiquetas_si__no],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Etiqueta", "Porcentaje"]
+        },
+        "embajador_salud_mental2": {
+            "dataset_fn": porcentaje_por_categoria,
+            "dataset_args": [df_embajador, "EMB06[EMBSM06]", etiquetas_embajador2],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Etiqueta", "Porcentaje"]
+        },
+        "embajador_salud_mental3": {
+            "dataset_fn": embajador_salud_mental3,
+            "dataset_args": [df_embajador],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Respuesta", "Porcentaje", "Categoria"]
+        },
+        "embajador_salud_mental4": {
+            "dataset_fn": embajador_salud_mental4,
+            "dataset_args": [df_embajador],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Respuesta", "Porcentaje", "Categoria"]
+        },
+        "embajador_salud_mental5": {
+            "dataset_fn": porcentaje_por_categoria,
+            "dataset_args": [df_embajador, "EMBSM09", etiquetas_si__no],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Etiqueta", "Porcentaje"],
+        },
+        "embajador_salud_mental6": {
+            "dataset_fn": porcentaje_por_categoria,
+            "dataset_args": [df_embajador, "EMB03", etiquetas_si__no],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Etiqueta", "Porcentaje"],
+        },
+        "embajador_salud_mental7": {
+            "dataset_fn": embajador_salud_mental7,
+            "dataset_args": [df_embajador],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Respuesta", "Porcentaje", "Categoria"]
+        },
+        "embajador_salud_mental8": {
+            "dataset_fn": porcentaje_por_categoria,
+            "dataset_args": [df_embajador, "EMB10", etiquetas_si__no],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Etiqueta", "Porcentaje"],
+        },
+        "embajador_salud_mental9": {
+            "dataset_fn": embajador_salud_mental9,
+            "dataset_args": [df_embajador],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Respuesta", "Porcentaje", "Categoria"],
+        },
+        "atencion_psicologica1": {
+            "dataset_fn": porcentaje_por_categoria,
+            "dataset_args": [df_atencion_psicologica, "ATPSIC01", etiquetas_si__no],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Etiqueta", "Porcentaje"],
+        },
+        "atencion_psicologica2": {
+            "dataset_fn": atencion_psicologica2,
+            "dataset_args": [df_atencion_psicologica],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Respuesta", "Porcentaje", "Categoria"],
+        },
+        "atencion_psicologica3": {
+            "dataset_fn": porcentaje_por_categoria,
+            "dataset_args": [df_atencion_psicologica, "ATPSIC03", etiquetas_si__no],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Etiqueta", "Porcentaje"],
+        },
+        "atencion_psicologica4": {
+            "dataset_fn": porcentaje_por_categoria,
+            "dataset_args": [df_atencion_psicologica, "BIM01", etiquetas_si__no],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Etiqueta", "Porcentaje"],
+        },
+        "atencion_psicologica5": {
+            "dataset_fn": atencion_psicologica5,
+            "dataset_args": [df_atencion_psicologica],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Respuesta", "Porcentaje", "Categoria"],
+        },
+        "atencion_psicologica6": {
+            "dataset_fn": porcentaje_por_categoria,
+            "dataset_args": [df_atencion_psicologica, "BIM03", etiquetas_si__no],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Etiqueta", "Porcentaje"],
+        },
+        "personas_cuidado1": {
+            "dataset_fn": porcentaje_por_categoria,
+            "dataset_args": [df_personas_cuidado, "CUIDA01", etiquetas_cuidado1],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Etiqueta", "Porcentaje"],
+        },
+        "personas_cuidado2": {
+            "dataset_fn": porcentaje_por_categoria,
+            "dataset_args": [df_personas_cuidado, "CUIDA02", etiquetas_cuidado2],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Etiqueta", "Porcentaje"],
+        },
+        "situacion_empleo": {
+            "dataset_fn": porcentaje_por_categoria,
+            "dataset_args": [df_situacion_empleo, "EMPLE01", etiquetas_empleo],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Etiqueta", "Porcentaje"],
+        },
+        "condicion_academica1": {
+            "dataset_fn": condicion_academica,
+            "dataset_args": [df_condicion_academica, ["CONDACAD[CON01]", "CONDACAD[CON02]"]],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Categoria", "Porcentaje", "Respuesta"],
+        },
+        "condicion_academica2": {
+            "dataset_fn": condicion_academica,
+            "dataset_args": [df_condicion_academica, ["CONDACAD[CON03]"]],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Categoria", "Porcentaje", "Respuesta"],
+        },
+        "espacio_sede1": {
+            "dataset_fn": porcentaje_seleccion_multiple_y,
+            "dataset_args": [df_espacios_sedes, ["DESCOM01[1]", "DESCOM01[2]", "DESCOM01[3]", "DESCOM01[4]", "DESCOM01[5]", "DESCOM01[6]", "DESCOM01[7]", "DESCOM01[8]", "DESCOM01[9]", "DESCOM01[10]", "DESCOM01[11]"], etiquetas_espacios_sedes, 1],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["CategoriaLabel", "Porcentaje", "Variable"]
+        },
+        "espacio_sede2": {
+            "dataset_fn": porcentaje_seleccion_multiple_y,
+            "dataset_args": [df_espacios_sedes, ["DESCOM01[1]", "DESCOM01[2]", "DESCOM01[3]", "DESCOM01[4]", "DESCOM01[5]", "DESCOM01[6]", "DESCOM01[7]", "DESCOM01[8]", "DESCOM01[9]", "DESCOM01[10]", "DESCOM01[11]"], etiquetas_espacios_sedes, 2],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["CategoriaLabel", "Porcentaje", "Variable"]
+        },
     }
 
     # Textos dinámicos — puedes agregar todos los que quieras
@@ -807,8 +1060,160 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
                 "bold": True,
                 "color": (255, 255, 255)
             }
-        }
-        
+        },
+        "respuestas_appvivo": {
+            "texto": f"Nota: esta sección incluye un total de {respuestas_appvivo} respuestas.",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 12,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "respuestas_embajador1": {
+            "texto": f"¿Eres un Embajador/a del Bienestar y la Salud Mental en tu sede? N = {respuestas_embajador1}",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 16,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "respuestas_embajador2": {
+            "texto": f"¿En qué medida el curso de embajadores ha aportado a tu bienestar y salud mental? N = {respuestas_embajador2}",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 16,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "respuestas_embajador3": {
+            "texto": f"Nota: esta sección incluye un total de {respuestas_embajador3} respuestas.",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 12,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "respuestas_embajador4": {
+            "texto": f"Con la información que acabas de leer sobre el programa, ¿te interesaría ser un Embajador/a del Bienestar y la Salud Mental? N = {respuestas_embajador4}",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 16,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "respuestas_embajador5": {
+            "texto": f"¿Cuál de las siguientes alternativas representa la razón por la que no te interesaría ser Embajador/a? N = {respuestas_embajador5}",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 16,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "respuestas_embajador6": {
+            "texto": f"¿En algún momento has buscado o recibido apoyo, orientación o información sobre bienestar y salud mental a través de alguien de la comunidad Duoc UC? (N={respuestas_embajador6})",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 16,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "respuestas_embajador7": {
+            "texto": f"¿Recuerdas si esa persona era un Embajador/a del Bienestar y la Salud Mental? (N={respuestas_embajador7})",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 16,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "respuestas_atencion_psiscologica1": {
+            "texto": f"Nota: esta sección incluye un total de {respuestas_atencion_psiscologica1} respuestas.",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 12,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "respuestas_bienestar_integral": {
+            "texto": f"Nota: esta sección incluye un total de {respuestas_bienestar_integral} respuestas.",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 16,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "respuestas_personas_cuidado1": {
+            "texto": f"¿Tienes a alguna persona a tu cuidado? N = {respuestas_personas_cuidado1}",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 16,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "respuestas_personas_cuidado2": {
+            "texto": f"¿Cuentas con apoyo para el cuidado de esa(s) persona(s) mientras estudias? N = {respuestas_personas_cuidado2}",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 16,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "respuestas_empleo": {
+            "texto": f"¿Cuál de estas situaciones refleja de mejor forma tu trabajo actual? N = {respuestas_empleo}",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 16,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "respuestas_condicion_academica": {
+            "texto": f"De acuerdo a las condiciones que tienes para desarrollar tus actividades académicas, ¿cuán de acuerdo estás con las siguientes afirmaciones? N = {respuestas_condicion_academica}",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 16,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "respuestas_espacios_sedes": {
+            "texto": f"Nota: esta pregunta incluye un total de {respuestas_espacios_sedes} respuestas y se desplegó solo a quienes habían profundizado en ideación suicida.",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 12,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
     }
 
-    actualizar_graficos(template_path, output_path, graficos_config, textos_config)
+    imagenes_config = {
+        "wordcloud_global": {
+            "buffer": buffer_wc_global
+        },
+        "wordcloud_mujeres": {
+            "buffer": buffer_wc_femenino
+        },
+        "wordcloud_hombres": {
+            "buffer": buffer_wc_masculino
+        },
+        "wordcloud_2022": {
+            "buffer": buffer_wc_2022
+        },
+        "wordcloud_2025": {
+            "buffer": buffer_wc_2025
+        },
+    }
+
+    actualizar_graficos(template_path, output_path, graficos_config, textos_config, imagenes_config)
