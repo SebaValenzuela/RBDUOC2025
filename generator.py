@@ -1,6 +1,6 @@
 from data.datasets import (
     atencion_psicologica2, atencion_psicologica5, condicion_academica, embajador_salud_mental3, embajador_salud_mental4, embajador_salud_mental4, embajador_salud_mental7, flow_percibido, apoyo_percibido, barreras_acceso_tratamiento,
-    ansiedad_manejo_clinico, cupit_marihuana,
+    ansiedad_manejo_clinico, cupit_marihuana, ideacion_suicida_barras,
     porcentaje_para_barras_apiladas, cantidad_total_dms5, porcentaje_seleccion_multiple_y,
     promedio_factor_carga_enfermedad_grupo_rojo, promedio_factor_carga_enfermedad_grupo_amarillo,
     marihuana_manejo_clinico,
@@ -17,13 +17,15 @@ from data.datasets import (
 from plots.charts import crear_chart_data
 from plots.wordclouds import crear_wordcloud
 from plots.pptx_updater import actualizar_graficos
+import pandas as pd
 
 def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, df_estresores, df_exigencia, df_afrontamiento, df_procrastinacion, df_salud_cronica, df_depresion,
                     df_ansiedad, df_personalidad, df_marihuana, df_alcohol, df_suicidio, df_grupo_verde, df_grupo_rojo, df_necesidad_tratamiento, df_barreras, df_apoyo,
                     df_flow_states, df_act_fisica, df_alimentacion, df_ing_liquidos, df_tabaquismo, df_perma, df_salud_mental_2022, df_bienestar_2022, df_app_vivo,
-                    df_embajador, df_atencion_psicologica, df_personas_cuidado, df_situacion_empleo, df_condicion_academica, df_espacios_sedes, df_encuesta_2022, df_palabras_normalizadas_wordcloud):
-    template_path = "reports/templates/template-prueba.pptx"
-    output_path = "reports/output/reporte-generado.pptx"
+                    df_embajador, df_atencion_psicologica, df_personas_cuidado, df_situacion_empleo, df_condicion_academica, df_espacios_sedes, df_encuesta_2022, df_palabras_normalizadas_wordcloud, df_salud_mental_2022_tres_grupos, tipo, filtro, nivel):
+    
+    template_path = f"reports/templates/template-{tipo}.pptx"
+    output_path = f"reports/output/reporte-{filtro}.pptx"
 
     df_valido = casos_validos_pss(df_estres)
     df_valido = aplicar_regla_pss(df_valido)
@@ -49,7 +51,6 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
     marihuana_manejo_clinico_global = df_marihuana_malestar_clinico["Valor"].iloc[0]
     marihuana_femenino = df_marihuana_genero[df_marihuana_genero["Categoria"] == "Femenino"]["Valor"].iloc[0]
 
-
     df_alcohol_manejo_clinico = alcohol_manejo_clinico(df_alcohol, None)
     df_alcohol_genero = alcohol_manejo_clinico(df_alcohol, ["GENERO"])
     alcohol_manejo_clinico_global = df_alcohol_manejo_clinico["Valor"].iloc[0]
@@ -67,6 +68,11 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
     grupo_verde = round((salud_mental_grupo_verde(df_grupo_verde) / total_dms5), 2) * 100
     grupo_rojo = round((salud_mental_grupo_rojo(df_grupo_rojo) / total_dms5), 2) * 100
     grupo_amarillo = 100 - grupo_verde - grupo_rojo
+
+    info_salud_mental_2022_grupos = salud_mental_2022(df_salud_mental_2022_tres_grupos)
+    grupo_verde_2022 = info_salud_mental_2022_grupos.loc['Global', 'Promoción']
+    grupo_amarillo_2022 = info_salud_mental_2022_grupos.loc['Global', 'Prevención indicada']
+    grupo_rojo_2022 = info_salud_mental_2022_grupos.loc['Global', 'Manejo clínico']
 
     factor_carga_enfermedad_rojo = promedio_factor_carga_enfermedad_grupo_rojo(df_global)
     factor_carga_enfermedad_amarillo = promedio_factor_carga_enfermedad_grupo_amarillo(df_global)
@@ -93,7 +99,14 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
     info_bienestar_2022 = bienestar_2022(df_bienestar_2022)
     bienestar_global_2022 = info_bienestar_2022.loc["Global", "PERMA COMPLETO"]
 
-    respuestas_appvivo = df_app_vivo.iloc[4856:]["APPVI01"].notna().sum()
+    # filtrar registros cuyo startdate sea posterior al 1 de octubre de 2025 a las 10:30
+    df_app_vivo_filterdate = df_app_vivo.copy()
+    df_app_vivo_filterdate['startdate'] = pd.to_datetime(df_app_vivo_filterdate['startdate'], errors='coerce')
+    df_app_vivo_filterdate = df_app_vivo_filterdate.dropna(subset=['startdate'])
+    cutoff = pd.Timestamp('2025-10-01 10:30')
+    df_app_vivo_filterdate = df_app_vivo_filterdate[df_app_vivo_filterdate['startdate'] >= cutoff]
+    df_app_vivo_filterdate.to_excel("df_app_vivo_4856_global.xlsx", index=False)
+    respuestas_appvivo = df_app_vivo_filterdate["APPVI01"].notna().sum()
 
     respuestas_embajador1 = df_embajador[df_embajador["EMB01"].notna()]["EMB01"].count()
     respuestas_embajador2 = df_embajador[df_embajador["EMB06[EMBSM06]"].notna()]["EMB06[EMBSM06]"].count()
@@ -117,6 +130,131 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
 
     columnas_descom = [f"DESCOM01[{i}]" for i in range(1, 12)]
     respuestas_espacios_sedes = df_espacios_sedes[columnas_descom].notna().any(axis=1).sum()
+
+    df_valido_global = df_valido.copy()
+    df_depresion_global = df_depresion.copy()
+    df_ansiedad_global = df_ansiedad.copy()
+    df_personalidad_global = df_personalidad.copy()
+    df_marihuana_global = df_marihuana.copy()
+    df_alcohol_global = df_alcohol.copy()
+    df_suicidio_global = df_suicidio.copy()
+    df_perma_global = df_perma.copy()
+
+    titulo = ""
+
+    if nivel:
+        if nivel == 1:
+            titulo = "Sede"
+        elif nivel == 2:
+            titulo = "Escuela"
+        df_participantes = df_participantes[df_participantes[tipo] == filtro]
+        df_valido = df_valido[df_valido[tipo] == filtro]
+        df_global = df_global[df_global[tipo] == filtro]
+        
+        nivel_estres_promedio_2025 = df_valido["pct_persona"].mean()
+        df_estresores = df_estresores[df_estresores[tipo] == filtro]
+        
+        df_exigencia = df_exigencia[df_exigencia[tipo] == filtro]
+        cantidad_exigencia = df_exigencia[exig_columns].notna().any(axis=1).sum() 
+        
+        df_afrontamiento = df_afrontamiento[df_afrontamiento[tipo] == filtro]
+        df_procrastinacion = df_procrastinacion[df_procrastinacion[tipo] == filtro]
+        
+        df_salud_cronica = df_salud_cronica[df_salud_cronica[tipo] == filtro]
+        cantidad_salfis1 = df_salud_cronica['SALFIS01'].count()
+
+        grupo_verde_2022 = info_salud_mental_2022_grupos.loc[filtro, 'Promoción']
+        grupo_amarillo_2022 = info_salud_mental_2022_grupos.loc[filtro, 'Prevención indicada']
+        grupo_rojo_2022 = info_salud_mental_2022_grupos.loc[filtro, 'Manejo clínico']
+
+        factor_carga_enfermedad_rojo = promedio_factor_carga_enfermedad_grupo_rojo(df_global)
+        factor_carga_enfermedad_amarillo = promedio_factor_carga_enfermedad_grupo_amarillo(df_global)
+        factor_carga_enfermedad_rojo_2022 = info_salud_mental_2022.loc[filtro, 'Factor carga de enfermedad - Manejo clínico']
+        factor_carga_enfermedad_amarillo_2022 = info_salud_mental_2022.loc[filtro, 'Factor carga de enfermedad - Prevención']
+
+        df_depresion = df_depresion[df_depresion[tipo] == filtro]
+        df_depresion_malestar_clinico = depresion_manejo_clinico(df_depresion, None)
+        depresion_manejo_clinico_global = df_depresion_malestar_clinico["Valor"].iloc[0]
+
+        df_ansiedad = df_ansiedad[df_ansiedad[tipo] == filtro]
+        df_ansiedad_malestar_clinico = ansiedad_manejo_clinico(df_ansiedad, None)
+        ansiedad_manejo_clinico_global = df_ansiedad_malestar_clinico["Valor"].iloc[0]
+
+        df_personalidad = df_personalidad[df_personalidad[tipo] == filtro]
+        df_personalidad_malestar_clinico = personalidad_manejo_clinico(df_personalidad, None)
+        personalidad_manejo_clinico_global = df_personalidad_malestar_clinico["Valor"].iloc[0]
+
+        df_marihuana = df_marihuana[df_marihuana[tipo] == filtro]
+        df_marihuana_malestar_clinico = marihuana_manejo_clinico(df_marihuana, None)
+        marihuana_manejo_clinico_global = df_marihuana_malestar_clinico["Valor"].iloc[0]
+
+        cupit_marihuana_porcentaje = cupit_marihuana(df_global)
+
+        df_alcohol = df_alcohol[df_alcohol[tipo] == filtro]
+        df_alcohol_manejo_clinico = alcohol_manejo_clinico(df_alcohol, None)
+        alcohol_manejo_clinico_global = df_alcohol_manejo_clinico["Valor"].iloc[0]
+
+        df_suicidio = df_suicidio[df_suicidio[tipo] == filtro]
+        df_ideacion_suicida_manejo_clinico = ideacion_suicida_manejo_clinico(df_suicidio, None)
+        ideacion_suicida_manejo_clinico_global = df_ideacion_suicida_manejo_clinico["Valor"].iloc[0]
+
+        df_necesidad_tratamiento = df_necesidad_tratamiento[df_necesidad_tratamiento[tipo] == filtro]
+
+        df_barreras = df_barreras[df_barreras[tipo] == filtro]
+
+        df_perma = df_perma[df_perma[tipo] == filtro]
+        df_nivel_bienestar = nivel_bienestar(df_perma, None)
+        nivel_bienestar_global = df_nivel_bienestar["Valor"].iloc[0]
+        info_bienestar_2022 = bienestar_2022(df_bienestar_2022)
+        bienestar_global_2022 = info_bienestar_2022.loc[filtro, "PERMA COMPLETO"]
+
+        df_apoyo = df_apoyo[df_apoyo[tipo] == filtro]
+        df_flow_states = df_flow_states[df_flow_states[tipo] == filtro]
+        flow_positivo = flow_percibido_positivo(df_flow_states)
+
+        df_act_fisica = df_act_fisica[df_act_fisica[tipo] == filtro]
+
+        df_alimentacion = df_alimentacion[df_alimentacion[tipo] == filtro]
+
+        df_ing_liquidos = df_ing_liquidos[df_ing_liquidos[tipo] == filtro]
+
+        df_tabaquismo = df_tabaquismo[df_tabaquismo[tipo] == filtro]
+
+        df_app_vivo_filterdate = df_app_vivo_filterdate[df_app_vivo_filterdate[tipo] == filtro]
+        respuestas_appvivo = df_app_vivo_filterdate["APPVI01"].notna().sum()
+
+        df_embajador = df_embajador[df_embajador[tipo] == filtro]
+        respuestas_embajador1 = df_embajador[df_embajador["EMB01"].notna()]["EMB01"].count()
+        respuestas_embajador2 = df_embajador[df_embajador["EMB06[EMBSM06]"].notna()]["EMB06[EMBSM06]"].count()
+        respuestas_embajador3 = df_embajador[df_embajador["EMB01"] == "Y"]["EMB06[EMBSM06]"].count()
+        respuestas_embajador4 = df_embajador[df_embajador["EMB03"].notna()]["EMB03"].count()
+        respuestas_embajador5 = df_embajador[df_embajador["EMB04"].notna()]["EMB04"].count()
+        respuestas_embajador6 = df_embajador[df_embajador["EMB10"].notna()]["EMB10"].count()
+        respuestas_embajador7 = df_embajador[df_embajador["EMB10"] == "Y"]["EMB11"].count()
+
+        df_atencion_psicologica = df_atencion_psicologica[df_atencion_psicologica[tipo] == filtro]
+        respuestas_atencion_psiscologica1 = df_atencion_psicologica[df_atencion_psicologica["ATPSIC01"].notna()]["ATPSIC01"].count()
+        respuestas_bienestar_integral = df_atencion_psicologica[df_atencion_psicologica["BIM01"].notna()]["BIM01"].count()
+
+        df_personas_cuidado = df_personas_cuidado[df_personas_cuidado[tipo] == filtro]
+        respuestas_personas_cuidado1 = df_personas_cuidado[df_personas_cuidado["CUIDA01"].notna()]["CUIDA01"].count()
+        respuestas_personas_cuidado2 = df_personas_cuidado[df_personas_cuidado["CUIDA02"].notna()]["CUIDA02"].count()
+
+        df_situacion_empleo = df_situacion_empleo[df_situacion_empleo[tipo] == filtro]
+        respuestas_empleo = df_situacion_empleo[df_situacion_empleo["EMPLE01"].notna()]["EMPLE01"].count()
+
+        df_condicion_academica = df_condicion_academica[df_condicion_academica[tipo] == filtro]
+        respuestas_condicion_academica = df_condicion_academica[columnas].notna().any(axis=1).sum()
+
+        df_espacios_sedes = df_espacios_sedes[df_espacios_sedes[tipo] == filtro]
+        respuestas_espacios_sedes = df_espacios_sedes[columnas_descom].notna().any(axis=1).sum()
+
+        df_grupo_verde = df_grupo_verde[df_grupo_verde[tipo] == filtro]
+        df_grupo_rojo = df_grupo_rojo[df_grupo_rojo[tipo] == filtro]
+        total_dms5 = cantidad_total_dms5(df_global)
+        grupo_verde = round((salud_mental_grupo_verde(df_grupo_verde) / total_dms5), 2) * 100
+        grupo_rojo = round((salud_mental_grupo_rojo(df_grupo_rojo) / total_dms5), 2) * 100
+        grupo_amarillo = 100 - grupo_verde - grupo_rojo
 
     columnas_estresores = [
       "ESTRE[ESTRE01]", "ESTRE[ESTRE02]", "ESTRE[ESTRE03]", "ESTRE[ESTRE04]", "ESTRE[ESTRE05]",
@@ -225,30 +363,35 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
     buffer_wc_global = crear_wordcloud(
         df_global, 
         columnas_para_wordcloud,
+        df_palabras_normalizadas_wordcloud,
         mask_path="plots/images/cloud_mask.png"
     )
 
     buffer_wc_femenino = crear_wordcloud(
         df_global[df_global["GENERO"] == "Femenino"],
         columnas_para_wordcloud,
+        df_palabras_normalizadas_wordcloud,
         mask_path="plots/images/cloud_mask.png"
     )
 
     buffer_wc_masculino = crear_wordcloud(
         df_global[df_global["GENERO"] == "Masculino"],
         columnas_para_wordcloud,
+        df_palabras_normalizadas_wordcloud,
         mask_path="plots/images/cloud_mask.png"
     )
 
     buffer_wc_2022 = crear_wordcloud(
         df_encuesta_2022,
         columnas_para_wordcloud,
+        df_palabras_normalizadas_wordcloud,
         mask_path="plots/images/cloud_mask.png"
     )
 
     buffer_wc_2025 = crear_wordcloud(
         df_global,
         columnas_para_wordcloud,
+        df_palabras_normalizadas_wordcloud,
         mask_path="plots/images/cloud_mask.png"
     )
 
@@ -291,7 +434,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "nivel_estres_sedes": {
             "dataset_fn": promedio_por_categoria,
-            "dataset_args": [df_valido, ["SEDE"]],
+            "dataset_args": [df_valido_global, ["SEDE"]],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["SEDE", "Porcentaje", None, True],
         },
@@ -309,25 +452,25 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "exigencia_academica": {
             "dataset_fn": porcentaje_estresores_exigencia,
-            "dataset_args": [df_exigencia, ["EXIG[1]", "EXIG[2]", "EXIG[3]", "EXIG[4]", "EXIG[5]", "EXIG[6]"], "ESTRE[ESTRE18]"],
+            "dataset_args": [df_exigencia, ["EXIG[1]", "EXIG[2]", "EXIG[3]", "EXIG[4]", "EXIG[5]", "EXIG[6]"], None, None],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria_label", "Porcentaje", "Variable", True],
         },
         "exigencia_academica_inicio": {
             "dataset_fn": porcentaje_estresores_exigencia,
-            "dataset_args": [df_exigencia, ["EXIG[1]", "EXIG[2]", "EXIG[3]", "EXIG[4]", "EXIG[5]", "EXIG[6]"], "TIPO_ALUMNO", ["Inicio"], "ESTRE[ESTRE18]"],
+            "dataset_args": [df_exigencia, ["EXIG[1]", "EXIG[2]", "EXIG[3]", "EXIG[4]", "EXIG[5]", "EXIG[6]"], "TIPO_ALUMNO", ["Inicio"]],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria_label", "Porcentaje", None, True],
         },
         "exigencia_academica_continuidad": {
             "dataset_fn": porcentaje_estresores_exigencia,
-            "dataset_args": [df_exigencia, ["EXIG[1]", "EXIG[2]", "EXIG[3]", "EXIG[4]", "EXIG[5]", "EXIG[6]"], "TIPO_ALUMNO", ["Continuidad"], "ESTRE[ESTRE18]"],
+            "dataset_args": [df_exigencia, ["EXIG[1]", "EXIG[2]", "EXIG[3]", "EXIG[4]", "EXIG[5]", "EXIG[6]"], "TIPO_ALUMNO", ["Continuidad"]],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria_label", "Porcentaje", None, True],
         },
         "exigencia_academica_admision_especial": {
             "dataset_fn": porcentaje_estresores_exigencia,
-            "dataset_args": [df_exigencia, ["EXIG[1]", "EXIG[2]", "EXIG[3]", "EXIG[4]", "EXIG[5]", "EXIG[6]"], "TIPO_ALUMNO", ["Admisión Especial"], "ESTRE[ESTRE18]"],
+            "dataset_args": [df_exigencia, ["EXIG[1]", "EXIG[2]", "EXIG[3]", "EXIG[4]", "EXIG[5]", "EXIG[6]"], "TIPO_ALUMNO", ["Admisión Especial"]],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria_label", "Porcentaje", None, True],
         },
@@ -366,79 +509,79 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "estresores_top5_2022": {
             "dataset_fn": top_estresores_2022,
-            "dataset_args": [df_estresores_2022, "Global", None, 5],
+            "dataset_args": [df_estresores_2022, filtro, None, 5],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria_label", "Porcentaje", "Variable", True],
         },
         "depresion_manejo_clinico": {
             "dataset_fn": depresion_manejo_clinico,
-            "dataset_args": [df_depresion, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 1],
+            "dataset_args": [df_depresion, ["GENERO", "JORNADA", "TIPO_ALUMNO", "ESCUELA"], 1],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
         "depresion_manejo_clinico_sede": {
             "dataset_fn": depresion_manejo_clinico,
-            "dataset_args": [df_depresion, ["SEDE"]],
+            "dataset_args": [df_depresion_global, ["SEDE"]],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
         "ansiedad_manejo_clinico": {
             "dataset_fn": ansiedad_manejo_clinico,
-            "dataset_args": [df_ansiedad, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 1],
+            "dataset_args": [df_ansiedad, ["GENERO", "JORNADA", "TIPO_ALUMNO", "ESCUELA"], 1],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
         "ansiedad_manejo_clinico_sede": {
             "dataset_fn": ansiedad_manejo_clinico,
-            "dataset_args": [df_ansiedad, ["SEDE"]],
+            "dataset_args": [df_ansiedad_global, ["SEDE"]],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
         "personalidad_manejo_clinico": {
             "dataset_fn": personalidad_manejo_clinico,
-            "dataset_args": [df_personalidad, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 1],
+            "dataset_args": [df_personalidad, ["GENERO", "JORNADA", "TIPO_ALUMNO", "ESCUELA"], 1],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
         "personalidad_manejo_clinico_sede": {
             "dataset_fn": personalidad_manejo_clinico,
-            "dataset_args": [df_personalidad, ["SEDE"]],
+            "dataset_args": [df_personalidad_global, ["SEDE"]],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
         "marihuana_manejo_clinico": {
             "dataset_fn": marihuana_manejo_clinico,
-            "dataset_args": [df_marihuana, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 1],
+            "dataset_args": [df_marihuana, ["GENERO", "JORNADA", "TIPO_ALUMNO", "ESCUELA"], 1],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
         "marihuana_manejo_clinico_sede": {
             "dataset_fn": marihuana_manejo_clinico,
-            "dataset_args": [df_marihuana, ["SEDE"]],
+            "dataset_args": [df_marihuana_global, ["SEDE"]],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
         "alcohol_manejo_clinico": {
             "dataset_fn": alcohol_manejo_clinico,
-            "dataset_args": [df_alcohol, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 1],
+            "dataset_args": [df_alcohol, ["GENERO", "JORNADA", "TIPO_ALUMNO", "ESCUELA"], 1],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
         "alcohol_manejo_clinico_sede": {
             "dataset_fn": alcohol_manejo_clinico,
-            "dataset_args": [df_alcohol, ["SEDE"]],
+            "dataset_args": [df_alcohol_global, ["SEDE"]],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
         "suicidio_manejo_clinico": {
             "dataset_fn": ideacion_suicida_manejo_clinico,
-            "dataset_args": [df_suicidio, ["GENERO", "JORNADA", "TIPO_ALUMNO"], 1],
+            "dataset_args": [df_suicidio, ["GENERO", "JORNADA", "TIPO_ALUMNO", "ESCUELA"], 1],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
         "suicidio_manejo_clinico_sede": {
             "dataset_fn": ideacion_suicida_manejo_clinico,
-            "dataset_args": [df_suicidio, ["SEDE"]],
+            "dataset_args": [df_suicidio_global, ["SEDE"]],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
@@ -461,7 +604,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
         "ideacion_suicida_4_bar_chart": {
-            "dataset_fn": porcentaje_para_barras_apiladas,
+            "dataset_fn": ideacion_suicida_barras,
             "dataset_args": [df_suicidio, ["CSS03", "CSS04", "CSS05"], etiquetas_si__no, etiquetas_categoria],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Porcentaje", "Respuesta"]
@@ -552,7 +695,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "nivel_bienestar_sede": {
             "dataset_fn": nivel_bienestar,
-            "dataset_args": [df_perma, ["SEDE"]],
+            "dataset_args": [df_perma_global, ["SEDE"]],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Categoria", "Valor", "Serie"],
         },
@@ -570,25 +713,37 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "porcentaje_grupo_amarillo_por_condicion": {
             "dataset_fn": porcentaje_grupo_amarillo_por_condicion,
-            "dataset_args": [df_global],
+            "dataset_args": [df_global, filtro],
             "chart_builder": crear_chart_data,
-            "chart_builder_args": ["Condición", "Porcentaje", "Serie"]
+            "chart_builder_args": ["Condición", "Valor", "Serie"]
         },
         "porcentaje_app_vivo1": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_app_vivo, "APPVI01", etiquetas_si__no],
+            "dataset_args": [df_app_vivo_filterdate, "APPVI01", etiquetas_si__no],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Etiqueta", "Porcentaje",]
+        },
+        "porcentaje_app_vivo1.2": {
+            "dataset_fn": porcentaje_por_categoria,
+            "dataset_args": [df_app_vivo_filterdate, "APPVI01", etiquetas_si__no],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje",]
         },
         "porcentaje_app_vivo3": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_app_vivo, "APPVI03", etiquetas_si__no],
+            "dataset_args": [df_app_vivo_filterdate, "APPVI03", etiquetas_si__no],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"]
         },
         "porcentaje_app_vivo2": {
             "dataset_fn": porcentaje_respuestas_appvivo,
-            "dataset_args": [df_global.iloc[4856:], ["APPVI02[1]", "APPVI02[2]", "APPVI02[3]"]],
+            "dataset_args": [df_app_vivo_filterdate, ["APPVI02[1]", "APPVI02[2]", "APPVI02[3]"]],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["CategoriaLabel", "Porcentaje", "Variable"]
+        },
+        "porcentaje_app_vivo2.2": {
+            "dataset_fn": porcentaje_respuestas_appvivo,
+            "dataset_args": [df_app_vivo_filterdate, ["APPVI02[1]", "APPVI02[2]", "APPVI02[3]"]],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["CategoriaLabel", "Porcentaje", "Variable"]
         },
@@ -682,6 +837,42 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
+        "atencion_psicologica1.2": {
+            "dataset_fn": porcentaje_por_categoria,
+            "dataset_args": [df_atencion_psicologica, "ATPSIC01", etiquetas_si__no],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Etiqueta", "Porcentaje"],
+        },
+        "atencion_psicologica2.2": {
+            "dataset_fn": atencion_psicologica2,
+            "dataset_args": [df_atencion_psicologica],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Respuesta", "Porcentaje", "Categoria"],
+        },
+        "atencion_psicologica3.2": {
+            "dataset_fn": porcentaje_por_categoria,
+            "dataset_args": [df_atencion_psicologica, "ATPSIC03", etiquetas_si__no],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Etiqueta", "Porcentaje"],
+        },
+        "atencion_psicologica4.2": {
+            "dataset_fn": porcentaje_por_categoria,
+            "dataset_args": [df_atencion_psicologica, "BIM01", etiquetas_si__no],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Etiqueta", "Porcentaje"],
+        },
+        "atencion_psicologica5.2": {
+            "dataset_fn": atencion_psicologica5,
+            "dataset_args": [df_atencion_psicologica],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Respuesta", "Porcentaje", "Categoria"],
+        },
+        "atencion_psicologica6.2": {
+            "dataset_fn": porcentaje_por_categoria,
+            "dataset_args": [df_atencion_psicologica, "BIM03", etiquetas_si__no],
+            "chart_builder": crear_chart_data,
+            "chart_builder_args": ["Etiqueta", "Porcentaje"],
+        },
         "personas_cuidado1": {
             "dataset_fn": porcentaje_por_categoria,
             "dataset_args": [df_personas_cuidado, "CUIDA01", etiquetas_cuidado1],
@@ -747,7 +938,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
             }
         },
         "nivel_estres_promedio_2022": {
-            "texto": f"{df_estresores_2022['Global']['Nivel de estrés 2022']:.0%}",
+            "texto": f"{df_estresores_2022[filtro]['Nivel de estrés 2022']:.0%}",
             "estilo": {
                 "fuente": "Calibri Light",
                 "tamano": 25,
@@ -980,6 +1171,33 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
                 "color": (0, 0, 0)
             }
         },
+        "grupo_verde_2022": {
+            "texto": f"{grupo_verde_2022*100:.0f}%",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 25,
+                "bold": True,
+                "color": (255, 255, 255)
+            }
+        },
+        "grupo_amarillo_2022": {
+            "texto": f"{grupo_amarillo_2022*100:.0f}%",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 25,
+                "bold": True,
+                "color": (255, 255, 255)
+            }
+        },
+        "grupo_rojo_2022": {
+            "texto": f"{grupo_rojo_2022*100:.0f}%",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 25,
+                "bold": True,
+                "color": (255, 255, 255)
+            }
+        },
         "factor_carga_enfermedad_amarillo_2022": {
             "texto": f"{factor_carga_enfermedad_amarillo_2022:.0f}",
             "estilo": {
@@ -1070,6 +1288,15 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
                 "color": (82, 82, 82)
             }
         },
+        "respuestas_appvivo2": {
+            "texto": f"Nota: esta sección incluye un total de {respuestas_appvivo} respuestas.",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 12,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
         "respuestas_embajador1": {
             "texto": f"¿Eres un Embajador/a del Bienestar y la Salud Mental en tu sede? N = {respuestas_embajador1}",
             "estilo": {
@@ -1142,11 +1369,29 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
                 "color": (82, 82, 82)
             }
         },
+        "respuestas_atencion_psiscologica1.2": {
+            "texto": f"Nota: esta sección incluye un total de {respuestas_atencion_psiscologica1} respuestas.",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 12,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
         "respuestas_bienestar_integral": {
             "texto": f"Nota: esta sección incluye un total de {respuestas_bienestar_integral} respuestas.",
             "estilo": {
                 "fuente": "Calibri Light",
-                "tamano": 16,
+                "tamano": 12,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
+        "respuestas_bienestar_integral1.2": {
+            "texto": f"Nota: esta sección incluye un total de {respuestas_bienestar_integral} respuestas.",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 12,
                 "bold": False,
                 "color": (82, 82, 82)
             }
@@ -1196,7 +1441,44 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
                 "color": (82, 82, 82)
             }
         },
+        "titulo":{
+            "texto": f"{titulo} {filtro}",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 40,
+                "bold": False,
+                "color": (255, 255, 255)
+            }
+        },
+        "titulo2":{
+            "texto": f"{titulo} {filtro}",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 40,
+                "bold": False,
+                "color": (255, 255, 255)
+            }
+        },
     }
+
+    subtitulo_texto = f"{titulo} {filtro}"
+    subtitulo_estilo = {
+        "fuente": "Calibri Light",
+        "tamano": 31,
+        "bold": True,
+        "color": (58, 67, 76)
+    }
+
+    nombres_placeholders_subtitulo = [f"subtitulo_sede_{i}" for i in range(1, 41)]
+
+    config_subtitulos_repetidos = {}
+    for nombre in nombres_placeholders_subtitulo:
+        config_subtitulos_repetidos[nombre] = {
+            "texto": subtitulo_texto,
+            "estilo": subtitulo_estilo
+        }
+    
+    textos_config.update(config_subtitulos_repetidos)
 
     imagenes_config = {
         "wordcloud_global": {

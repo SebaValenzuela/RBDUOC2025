@@ -117,13 +117,13 @@ def porcentaje_por_categoria(df, columna, etiquetas=None):
     porcentajes = df[columna].value_counts(normalize=True).reset_index()
     porcentajes.columns = [columna, "Porcentaje"]
     
-    porcentajes["Porcentaje"] = porcentajes["Porcentaje"].round(2)
+    porcentajes["Porcentaje"] = porcentajes["Porcentaje"]
     
     if etiquetas:
         porcentajes["Etiqueta"] = porcentajes[columna].map(etiquetas)
         
         porcentajes = porcentajes.groupby("Etiqueta", as_index=False)["Porcentaje"].sum()
-        porcentajes["Porcentaje"] = porcentajes["Porcentaje"].round(2)
+        porcentajes["Porcentaje"] = porcentajes["Porcentaje"]
     return porcentajes
 
 
@@ -179,7 +179,6 @@ def porcentaje_estresores(df, columnas, grupo=None, top=None):
     df_temp = df.copy()
     df_temp["marco_algo"] = df_temp[columnas].notna().any(axis=1)
     df_temp = df_temp[df_temp["marco_algo"]]
-    print(len(df_temp))
 
     resultados = []
 
@@ -242,8 +241,11 @@ def top_estresores_2022(df_wide, sede="Global", variable=None, top=5):
     return df_top
 
 
-def porcentaje_estresores_exigencia(df, columnas_estres, filtro_columna=None, filtro_valores=None, marcar_col='ESTRE[ESTRE18]'):
-    df_temp = df[df[marcar_col] == 'Y'].copy()
+def porcentaje_estresores_exigencia(df, columnas_estres, filtro_columna=None, filtro_valores=None):
+    marcar_col='ESTRE[ESTRE18]'
+    # df_temp = df[df[marcar_col].notna()].copy()
+    # df_temp = df[df[marcar_col] == 'Y'].copy()
+    df_temp = df[df[columnas_estres].notna().any(axis=1)].copy()
 
     if filtro_columna and filtro_valores is not None:
         df_temp = df_temp[df_temp[filtro_columna].isin(filtro_valores)]
@@ -274,8 +276,18 @@ def porcentaje_estresores_exigencia(df, columnas_estres, filtro_columna=None, fi
                 'Variable': 'Total'
             })
 
-    df_resultado = pd.DataFrame(resultados)
-    df_resultado = df_resultado.iloc[::-1]
+    columnas_esperadas = ['Categoria_label', 'Porcentaje', 'Variable']
+    
+    if not resultados:
+        dummy_data = [{
+            'Categoria_label': 'Sin datos',
+            'Porcentaje': None,
+            'Variable': 'Total'
+        }]
+        df_resultado = pd.DataFrame(dummy_data, columns=columnas_esperadas)
+    else:
+        df_resultado = pd.DataFrame(resultados, columns=columnas_esperadas)
+        df_resultado = df_resultado.iloc[::-1].reset_index(drop=True)
     return df_resultado
 
 def porcentaje_afrontamiento(df, columnas_items, valor_marcar=4, filtro_columna=None, filtro_valores=None):
@@ -819,6 +831,27 @@ def cupit_marihuana(df):
 
     return resultado * 100
 
+def ideacion_suicida_barras(df, columnas, etiquetas_respuesta=None, etiquetas_categoria=None):
+    resultados = []
+
+    columnas_validas = ["CSS01", "CSS02", "CSS03", "CSS04", "CSS05", "CSS06"]
+    df = df[columnas_validas].dropna().copy()
+
+    for col in columnas:
+        conteo = df[col].value_counts()
+        for respuesta, cantidad in conteo.items():
+            etiqueta_resp = etiquetas_respuesta.get(respuesta, respuesta) if etiquetas_respuesta else respuesta
+            
+            etiqueta_cat = etiquetas_categoria.get(col, col) if etiquetas_categoria else col
+            
+            resultados.append({
+                "Categoria": etiqueta_cat,
+                "Respuesta": etiqueta_resp,
+                "Porcentaje": cantidad / len(df),
+            })
+
+    return pd.DataFrame(resultados)
+
 def porcentaje_para_barras_apiladas(df, columnas, etiquetas_respuesta=None, etiquetas_categoria=None):
     resultados = []
 
@@ -832,7 +865,7 @@ def porcentaje_para_barras_apiladas(df, columnas, etiquetas_respuesta=None, etiq
             resultados.append({
                 "Categoria": etiqueta_cat,
                 "Respuesta": etiqueta_resp,
-                "Porcentaje": round(porcentaje, 2),
+                "Porcentaje": porcentaje,
             })
 
     return pd.DataFrame(resultados)
@@ -935,7 +968,7 @@ def flow_percibido_positivo(df):
         porcentaje_global = 0.0
     else:
         porcentaje_global = conteo_positivas / total_respuestas_validas
-    return round(porcentaje_global, 3) * 100
+    return porcentaje_global * 100
 
 def alimentacion(df, columnas):
     etiquetas_alimentacion_resp = {
@@ -1028,7 +1061,7 @@ def ingesta_liquidos(df: pd.DataFrame) -> pd.DataFrame:
         resultados.append({
             "Categoria": categoria_nombre, 
             "Respuesta": etiqueta_resp, 
-            "Porcentaje": round(porcentaje, 4)
+            "Porcentaje": porcentaje
         })
         
     df_resultado = pd.DataFrame(resultados)
@@ -1080,7 +1113,7 @@ def tabaquismo(df):
         resultados.append({
             "Categoria": categoria_nombre, 
             "Respuesta": etiqueta_resp, 
-            "Porcentaje": round(porcentaje, 4)
+            "Porcentaje": porcentaje
         })
         
     df_resultado = pd.DataFrame(resultados)
@@ -1100,46 +1133,60 @@ def tabaquismo(df):
     return df_resultado_final
 
 def nivel_bienestar(df, group_cols=None, espacio=1):
-    indices_a_excluir = {6, 11, 12, 17, 21, 22, 23}
-    todas_columnas_perma = [f"PERMA1[PER{i:02d}]" for i in range(1, 21)] + \
-                           ["PERMA21", "PERMA22", "PERMA23"]
+    # 🔹 Ítems PERMA que deben incluirse en el promedio por persona
+    indices_incluir = {1, 2, 3, 4, 5, 7, 8, 9, 10, 13, 14, 15, 16, 18, 19, 20}
+    
+    # Todas las columnas PERMA posibles
+    todas_columnas_perma = [f"PERMA1[PER{i:02d}]" for i in range(1, 21)] + ["PERMA21", "PERMA22", "PERMA23"]
+
+    # Solo las columnas que se deben usar para el promedio individual
     columnas_a_promediar = [
         col for i, col in enumerate(todas_columnas_perma, start=1)
-        if i not in indices_a_excluir and col in df.columns
+        if i in indices_incluir and col in df.columns
     ]
+
     if not columnas_a_promediar:
         return pd.DataFrame(columns=["Categoria", "Serie", "Valor"])
+
     df_temp = df.copy()
-    df_temp['Nivel Bienestar'] = df_temp[columnas_a_promediar].mean(axis=1, skipna=True)
-    df_validos = df_temp.dropna(subset=['Nivel Bienestar']).copy()
+
+    # 🔹 Solo personas con todas las columnas PERMA respondidas (todas las 23)
+    df_validos = df_temp.dropna(subset=todas_columnas_perma).copy()
+
+    # 🔹 Calcular el promedio individual con las columnas seleccionadas
+    df_validos["Nivel Bienestar"] = df_validos[columnas_a_promediar].mean(axis=1)
+
     resultados = []
+
     if not group_cols:
-        promedio_global = df_validos['Nivel Bienestar'].mean()
+        promedio_global = df_validos["Nivel Bienestar"].mean()
         resultados.append({
-            "Categoria": "Global", 
-            "Serie": "Nivel Bienestar (Promedio)", 
-            "Valor": round(promedio_global, 2)
+            "Categoria": "Global",
+            "Serie": "Nivel Bienestar (Promedio)",
+            "Valor": promedio_global if pd.notna(promedio_global) else None
         })
     else:
         segmentacion_existente = [col for col in group_cols if col in df.columns]
         for col_segmento in segmentacion_existente:
-            df_agrupado = df_validos.groupby(col_segmento)['Nivel Bienestar'].mean().reset_index()
-            for _, row in df_agrupado.iterrows():
+            for valor_segmento, df_seg in df_validos.groupby(col_segmento):
+                prom_seg = df_seg["Nivel Bienestar"].mean()
                 resultados.append({
-                    "Categoria": row[col_segmento],
-                    "Serie": "Nivel Bienestar (Promedio)", 
-                    "Valor": round(row['Nivel Bienestar'], 2)
+                    "Categoria": valor_segmento,
+                    "Serie": "Nivel Bienestar (Promedio)",
+                    "Valor": prom_seg if pd.notna(prom_seg) else None
                 })
+
+            # Espaciado visual
             if espacio > 0:
                 for i in range(espacio):
-                    spacer_row = {
-                        "Categoria": f"_spacer_{col_segmento}_{i}", # Etiqueta única
-                        "Serie": "Nivel bienestar (Promedio)", # Mantener serie
-                        "Valor": None # Valor nulo para espaciado
-                    }
-                    resultados.append(spacer_row)
-    df_resultado = pd.DataFrame(resultados)
-    return df_resultado
+                    resultados.append({
+                        "Categoria": f"_spacer_{col_segmento}_{i}",
+                        "Serie": "Nivel Bienestar (Promedio)",
+                        "Valor": None
+                    })
+
+    return pd.DataFrame(resultados)
+
 
 def salud_mental_2022(df):
     if isinstance(df, str):
@@ -1205,7 +1252,7 @@ def perma_2022_2025(df_2022, df_2025):
                 resultados.append({
                     "Categoria": factor,
                     "Serie": "2022",
-                    "Valor": round(valor_normalizado, 3)
+                    "Valor": valor_normalizado
                 })
 
     # --- 2. PROCESAR DATOS 2025 ---
@@ -1236,7 +1283,7 @@ def perma_2022_2025(df_2022, df_2025):
                 resultados.append({
                     "Categoria": factor,
                     "Serie": "2025",
-                    "Valor": round(valor_normalizado, 3)
+                    "Valor": valor_normalizado
                 })
 
     # 3. CONSOLIDAR Y RETORNAR
@@ -1269,7 +1316,7 @@ def nhl_2022_2025(df_2022, df_2025):
                 resultados.append({
                     "Categoria": factor_key,
                     "Serie": "2022",
-                    "Valor": round(valor_normalizado, 3)
+                    "Valor": valor_normalizado
                 })
     perma_cols = [f"PERMA1[PER{i:02d}]" for i in range(1, 21)] + ["PERMA21", "PERMA22", "PERMA23"]
     perma_cols = [c for c in perma_cols if c in df_2025.columns]
@@ -1291,7 +1338,7 @@ def nhl_2022_2025(df_2022, df_2025):
                 resultados.append({
                     "Categoria": factor,
                     "Serie": "2025",
-                    "Valor": round(valor_normalizado, 3)
+                    "Valor": valor_normalizado
                 })
     df_resultado = pd.DataFrame(resultados)
     orden_categorias = list(NHL_FACTORS.keys())
@@ -1300,7 +1347,7 @@ def nhl_2022_2025(df_2022, df_2025):
     
     return df_resultado
 
-def porcentaje_grupo_amarillo_por_condicion(df):
+def porcentaje_grupo_amarillo_por_condicion(df, filtro=None):
     dsm_cols = [f"DSM5[DSM{str(i).zfill(2)}]" for i in range(1, 23)] + ["ED15[ED01]", "ED15[ED02]"]
     df_valid = df[df[dsm_cols].notna().all(axis=1)].copy()
 
@@ -1315,14 +1362,10 @@ def porcentaje_grupo_amarillo_por_condicion(df):
     ), axis=1)
     mask_green_personalidad = df_valid.apply(lambda row: (
         (row["DSM5[DSM18]"] < 2) and
-        (row["DSM5[DSM19]"] < 2) 
+        (row["DSM5[DSM19]"] < 2)
     ), axis=1)
-    mask_green_alcohol = df_valid.apply(lambda row: (
-        (row["DSM5[DSM20]"] < 1)
-    ), axis=1)
-    mask_green_marihuana = df_valid.apply(lambda row: (
-        (row["DSM5[DSM22]"] < 1)
-    ), axis=1)
+    mask_green_alcohol = df_valid.apply(lambda row: (row["DSM5[DSM20]"] < 1), axis=1)
+    mask_green_marihuana = df_valid.apply(lambda row: (row["DSM5[DSM22]"] < 1), axis=1)
     mask_green_otros = df_valid.apply(lambda row: (
         (row["DSM5[DSM03]"] < 2) and
         (row["DSM5[DSM04]"] < 2) and
@@ -1348,6 +1391,7 @@ def porcentaje_grupo_amarillo_por_condicion(df):
     audit_cols = ["AUDIT01[AUDIT01]", "AUDIT02[AUDIT02]"] + \
                  [f"AUDIT38[AUDIT0{i}]" for i in range(3, 9)] + \
                  [f"AUDIT910[AUDIT{str(i).zfill(2)}]" for i in range(9, 11)]
+
     df_depresion = df_valid[~mask_green_depresion].copy()
     df_ansiedad = df_valid[~mask_green_ansiedad].copy()
     df_personalidad = df_valid[~mask_green_personalidad].copy()
@@ -1357,24 +1401,48 @@ def porcentaje_grupo_amarillo_por_condicion(df):
 
     total = len(df_valid)
     if total == 0:
-        return pd.DataFrame(columns=["Condición", "Porcentaje"])
-
-    resultados = []
+        return pd.DataFrame(columns=["Condición", "Serie", "Valor"])
 
     condiciones = {
         "Uso problemático marihuana": (df_marihuana[marihuana_cols].sum(axis=1) < 4),
         "Uso problemático alcohol": (df_alcohol[audit_cols].sum(axis=1) < 16),
         "Trastornos de personalidad": (df_personalidad[lpf_cols].sum(axis=1) < 27),
         "Ansiedad": (df_ansiedad[gad_cols].sum(axis=1) < 10),
-        "Depresión":  (df_depresion[phq_cols].sum(axis=1) < 10),
+        "Depresión": (df_depresion[phq_cols].sum(axis=1) < 10),
     }
 
-    resultados.append({"Condición": "Malestar en áreas no profundizadas", "Porcentaje": round((len(df_otros) / len(df_valid)), 3)})
+    resultados = [{"Condición": "Malestar en áreas no profundizadas", "Sede": len(df_otros) / total}]
     for nombre, mask in condiciones.items():
-        porcentaje = (mask.sum() / len(df_valid)) 
-        resultados.append({"Condición": nombre, "Porcentaje": round(porcentaje, 3)})
+        porcentaje = mask.sum() / total
+        resultados.append({"Condición": nombre, "Sede": porcentaje})
 
     df_resultado = pd.DataFrame(resultados)
+
+    if filtro != "Global":
+        hardcoded = {
+            "Depresión": 0.29,
+            "Ansiedad": 0.44,
+            "Trastornos de personalidad": 0.47,
+            "Uso problemático alcohol": 0.28,
+            "Uso problemático marihuana": 0.13,
+            "Malestar en áreas no profundizadas": 0.96
+        }
+
+        df_resultado["DUOC UC"] = df_resultado["Condición"].map(hardcoded)
+
+        # 🔹 Convertir a formato largo para el gráfico
+        df_resultado = df_resultado.melt(
+            id_vars=["Condición"],
+            value_vars=["Sede", "DUOC UC"],
+            var_name="Serie",
+            value_name="Valor"
+        )
+
+    else:
+        # 🔹 Si es global, mantener estructura simple
+        df_resultado = df_resultado.rename(columns={"Sede": "Valor"})
+        df_resultado["Serie"] = "Sede"
+
     return df_resultado
 
 def porcentaje_respuestas_appvivo(df, columnas, labels_dict=LABELS_APPVI02, col_appvi01="APPVI01"):
@@ -1396,7 +1464,7 @@ def porcentaje_respuestas_appvivo(df, columnas, labels_dict=LABELS_APPVI02, col_
         })
     
     df_resultado = pd.DataFrame(resultados)
-    df_resultado["Porcentaje"] = df_resultado["Porcentaje"].round(2)
+    df_resultado["Porcentaje"] = df_resultado["Porcentaje"]
     return df_resultado.rename(columns={"Variable": "Categoria"})
 
 def embajador_salud_mental3(df) -> pd.DataFrame:
@@ -1432,7 +1500,7 @@ def embajador_salud_mental3(df) -> pd.DataFrame:
         resultados.append({
             "Categoria": categoria_nombre, 
             "Respuesta": etiqueta_resp, 
-            "Porcentaje": round(porcentaje, 4)
+            "Porcentaje": porcentaje
         })
         
     df_resultado = pd.DataFrame(resultados)
@@ -1484,7 +1552,7 @@ def embajador_salud_mental4(df) -> pd.DataFrame:
         resultados.append({
             "Categoria": categoria_nombre, 
             "Respuesta": etiqueta_resp, 
-            "Porcentaje": round(porcentaje, 4)
+            "Porcentaje": porcentaje
         })
         
     df_resultado = pd.DataFrame(resultados)
@@ -1537,7 +1605,7 @@ def embajador_salud_mental7(df) -> pd.DataFrame:
         resultados.append({
             "Categoria": categoria_nombre, 
             "Respuesta": etiqueta_resp, 
-            "Porcentaje": round(porcentaje, 4)
+            "Porcentaje": porcentaje
         })
         
     df_resultado = pd.DataFrame(resultados)
@@ -1584,7 +1652,7 @@ def embajador_salud_mental9(df) -> pd.DataFrame:
         resultados.append({
             "Categoria": categoria_nombre, 
             "Respuesta": etiqueta_resp, 
-            "Porcentaje": round(porcentaje, 4)
+            "Porcentaje": porcentaje
         })
         
     df_resultado = pd.DataFrame(resultados)
@@ -1636,7 +1704,7 @@ def atencion_psicologica2(df) -> pd.DataFrame:
         resultados.append({
             "Categoria": categoria_nombre, 
             "Respuesta": etiqueta_resp, 
-            "Porcentaje": round(porcentaje, 4)
+            "Porcentaje": porcentaje
         })
         
     df_resultado = pd.DataFrame(resultados)
@@ -1687,7 +1755,7 @@ def atencion_psicologica5(df) -> pd.DataFrame:
         resultados.append({
             "Categoria": categoria_nombre, 
             "Respuesta": etiqueta_resp, 
-            "Porcentaje": round(porcentaje, 4)
+            "Porcentaje": porcentaje
         })
         
     df_resultado = pd.DataFrame(resultados)
@@ -1783,5 +1851,5 @@ def porcentaje_seleccion_multiple_y(df, columnas, labels_dict=None, since=None):
         })
 
     df_resultado = pd.DataFrame(resultados)
-    df_resultado["Porcentaje"] = df_resultado["Porcentaje"].round(2)
+    df_resultado["Porcentaje"] = df_resultado["Porcentaje"]
     return df_resultado
