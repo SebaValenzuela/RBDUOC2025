@@ -105,7 +105,6 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
     df_app_vivo_filterdate = df_app_vivo_filterdate.dropna(subset=['startdate'])
     cutoff = pd.Timestamp('2025-10-01 10:30')
     df_app_vivo_filterdate = df_app_vivo_filterdate[df_app_vivo_filterdate['startdate'] >= cutoff]
-    df_app_vivo_filterdate.to_excel("df_app_vivo_4856_global.xlsx", index=False)
     respuestas_appvivo = df_app_vivo_filterdate["APPVI01"].notna().sum()
 
     respuestas_embajador1 = df_embajador[df_embajador["EMB01"].notna()]["EMB01"].count()
@@ -195,6 +194,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         alcohol_manejo_clinico_global = df_alcohol_manejo_clinico["Valor"].iloc[0]
 
         df_suicidio = df_suicidio[df_suicidio[tipo] == filtro]
+        respuestas_suicidio = len(df_suicidio)
         df_ideacion_suicida_manejo_clinico = ideacion_suicida_manejo_clinico(df_suicidio, None)
         ideacion_suicida_manejo_clinico_global = df_ideacion_suicida_manejo_clinico["Valor"].iloc[0]
 
@@ -282,9 +282,9 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
     }
 
     etiquetas_categoria = {
-        "CSS03": "Ideación pasiva (i3)",
-        "CSS04": "Ideación pasiva (i4)",
-        "CSS05": "Ideación pasiva (i5)"
+        "CSS03": "Ha pensado cómo (i3)",
+        "CSS04": "Ha tenido intención de hacerlo (i4)",
+        "CSS05": "Ha hecho plan detallado y/o intenciones con plan (i5)"
     }
 
     etiquetas_phq09f = {
@@ -587,19 +587,19 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "ideacion_suicida_1_pie_chart": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_suicidio, "PHQ09[PHQ09F]", etiquetas_phq09f],
+            "dataset_args": [df_suicidio, "PHQ09[PHQ09F]", etiquetas_phq09f, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
         "ideacion_suicida_2_pie_chart": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_suicidio, "CSS01", etiquetas_si__no],
+            "dataset_args": [df_suicidio, "CSS01", etiquetas_si__no, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
         "ideacion_suicida_3_pie_chart": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_suicidio, "CSS02", etiquetas_si__no],
+            "dataset_args": [df_suicidio, "CSS02", etiquetas_si__no, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
@@ -611,31 +611,31 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "ideacion_suicida_5_pie_chart": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_suicidio, "CSS06", etiquetas_si__no],
+            "dataset_args": [df_suicidio, "CSS06", etiquetas_si__no, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
         "nectto_pie_chart": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_necesidad_tratamiento, "NECTTO", etiquetas_si__no],
+            "dataset_args": [df_necesidad_tratamiento, "NECTTO", etiquetas_si__no, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
         "acctto_pie_chart": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_necesidad_tratamiento, "ACCTTO", etiquetas_si__no],
+            "dataset_args": [df_necesidad_tratamiento, "ACCTTO", etiquetas_si__no, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
         "lugtto_pie_chart": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_necesidad_tratamiento, "LUGTTO", etiquetas_lugtto],
+            "dataset_args": [df_necesidad_tratamiento, "LUGTTO", etiquetas_lugtto, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
         "tiptto_pie_chart": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_necesidad_tratamiento, "TIPTTO", etiquetas_tiptto],
+            "dataset_args": [df_necesidad_tratamiento, "TIPTTO", etiquetas_tiptto, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
@@ -659,7 +659,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "actividad_fisica_pie_chart": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_act_fisica, "ACTFIS01[ACTFIS01]", etiquetas_act_fisica],
+            "dataset_args": [df_act_fisica, "ACTFIS01[ACTFIS01]", etiquetas_act_fisica, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
@@ -719,19 +719,19 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "porcentaje_app_vivo1": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_app_vivo_filterdate, "APPVI01", etiquetas_si__no],
+            "dataset_args": [df_app_vivo_filterdate, "APPVI01", etiquetas_si__no, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje",]
         },
         "porcentaje_app_vivo1.2": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_app_vivo_filterdate, "APPVI01", etiquetas_si__no],
+            "dataset_args": [df_app_vivo_filterdate, "APPVI01", etiquetas_si__no, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje",]
         },
         "porcentaje_app_vivo3": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_app_vivo_filterdate, "APPVI03", etiquetas_si__no],
+            "dataset_args": [df_app_vivo_filterdate, "APPVI03", etiquetas_si__no, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"]
         },
@@ -749,13 +749,13 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "embajador_salud_mental1": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_embajador, "EMB01", etiquetas_si__no],
+            "dataset_args": [df_embajador, "EMB01", etiquetas_si__no, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"]
         },
         "embajador_salud_mental2": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_embajador, "EMB06[EMBSM06]", etiquetas_embajador2],
+            "dataset_args": [df_embajador, "EMB06[EMBSM06]", etiquetas_embajador2, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"]
         },
@@ -773,13 +773,13 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "embajador_salud_mental5": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_embajador, "EMBSM09", etiquetas_si__no],
+            "dataset_args": [df_embajador, "EMBSM09", etiquetas_si__no, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
         "embajador_salud_mental6": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_embajador, "EMB03", etiquetas_si__no],
+            "dataset_args": [df_embajador, "EMB03", etiquetas_si__no, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
@@ -791,7 +791,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "embajador_salud_mental8": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_embajador, "EMB10", etiquetas_si__no],
+            "dataset_args": [df_embajador, "EMB10", etiquetas_si__no, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
@@ -803,7 +803,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "atencion_psicologica1": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_atencion_psicologica, "ATPSIC01", etiquetas_si__no],
+            "dataset_args": [df_atencion_psicologica, "ATPSIC01", etiquetas_si__no, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
@@ -815,13 +815,13 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "atencion_psicologica3": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_atencion_psicologica, "ATPSIC03", etiquetas_si__no],
+            "dataset_args": [df_atencion_psicologica, "ATPSIC03", etiquetas_si__no, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
         "atencion_psicologica4": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_atencion_psicologica, "BIM01", etiquetas_si__no],
+            "dataset_args": [df_atencion_psicologica, "BIM01", etiquetas_si__no, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
@@ -833,13 +833,13 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "atencion_psicologica6": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_atencion_psicologica, "BIM03", etiquetas_si__no],
+            "dataset_args": [df_atencion_psicologica, "BIM03", etiquetas_si__no, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
         "atencion_psicologica1.2": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_atencion_psicologica, "ATPSIC01", etiquetas_si__no],
+            "dataset_args": [df_atencion_psicologica, "ATPSIC01", etiquetas_si__no, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
@@ -857,7 +857,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
         },
         "atencion_psicologica4.2": {
             "dataset_fn": porcentaje_por_categoria,
-            "dataset_args": [df_atencion_psicologica, "BIM01", etiquetas_si__no],
+            "dataset_args": [df_atencion_psicologica, "BIM01", etiquetas_si__no, True],
             "chart_builder": crear_chart_data,
             "chart_builder_args": ["Etiqueta", "Porcentaje"],
         },
@@ -1279,6 +1279,15 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
                 "color": (255, 255, 255)
             }
         },
+        "respuestas_suicidio": {
+            "texto": f"Nota: esta sección incluye un total de {respuestas_suicidio} respuestas.",
+            "estilo": {
+                "fuente": "Calibri Light",
+                "tamano": 12,
+                "bold": False,
+                "color": (82, 82, 82)
+            }
+        },
         "respuestas_appvivo": {
             "texto": f"Nota: esta sección incluye un total de {respuestas_appvivo} respuestas.",
             "estilo": {
@@ -1433,7 +1442,7 @@ def generar_reporte(df_global, df_participantes, df_estres, df_estresores_2022, 
             }
         },
         "respuestas_espacios_sedes": {
-            "texto": f"Nota: esta pregunta incluye un total de {respuestas_espacios_sedes} respuestas y se desplegó solo a quienes habían profundizado en ideación suicida.",
+            "texto": f"Nota: esta pregunta incluye un total de {respuestas_espacios_sedes} respuestas y se desplegó a modo de pregunta de descompresión solo a quienes habían profundizado en ideación suicida.",
             "estilo": {
                 "fuente": "Calibri Light",
                 "tamano": 12,

@@ -98,13 +98,13 @@ LABELS_CONDICION_ACADEMICA = {
 
 # Este diccionario define tu regla de agrupación
 FLOW_GROUPING_MAP = {
-    1: "ap negativas",
-    2: "ap negativas",
-    3: "ap neutras",
-    4: "ap neutras",
-    5: "ap neutras",
-    6: "ap positivas",
-    7: "ap positivas",
+    1: "Apreciación negativa",
+    2: "Apreciación negativa",
+    3: "Apreciación neutra",
+    4: "Apreciación neutra",
+    5: "Apreciación neutra",
+    6: "Apreciación positiva",
+    7: "Apreciación positiva",
 }
 
 LABELS_APPVI02 = {
@@ -113,17 +113,17 @@ LABELS_APPVI02 = {
     "APPVI02[3]": "Contenidos en salud mental"
 }
 
-def porcentaje_por_categoria(df, columna, etiquetas=None):
+def porcentaje_por_categoria(df, columna, etiquetas=None, invertir=False):
     porcentajes = df[columna].value_counts(normalize=True).reset_index()
     porcentajes.columns = [columna, "Porcentaje"]
     
-    porcentajes["Porcentaje"] = porcentajes["Porcentaje"]
-    
     if etiquetas:
         porcentajes["Etiqueta"] = porcentajes[columna].map(etiquetas)
-        
         porcentajes = porcentajes.groupby("Etiqueta", as_index=False)["Porcentaje"].sum()
-        porcentajes["Porcentaje"] = porcentajes["Porcentaje"]
+    
+    if invertir:
+        porcentajes = porcentajes.iloc[::-1].reset_index(drop=True)
+    
     return porcentajes
 
 
@@ -641,7 +641,7 @@ def ideacion_suicida_manejo_clinico(df, group_cols=None, espacio=0):
                     porcentaje = 0
                 else:
                     total_clinico = (df_cat["ideacion_suicida_malestar_clinico"] == "Sí").sum()
-                    porcentaje = total_clinico / denom
+                    porcentaje = total_clinico / len(df_cat)
                 resultados.append({
                     "Categoria": cat,
                     "Serie": "Malestar clínico en suicidio",
@@ -849,8 +849,9 @@ def ideacion_suicida_barras(df, columnas, etiquetas_respuesta=None, etiquetas_ca
                 "Respuesta": etiqueta_resp,
                 "Porcentaje": cantidad / len(df),
             })
-
-    return pd.DataFrame(resultados)
+    
+    resultados = pd.DataFrame(resultados)
+    return resultados
 
 def porcentaje_para_barras_apiladas(df, columnas, etiquetas_respuesta=None, etiquetas_categoria=None):
     resultados = []
@@ -903,6 +904,14 @@ def apoyo_percibido(df):
         etiquetas_respuesta=LABELS_APOYO_RESPUESTAS,
         etiquetas_categoria=LABELS_APOYO_ITEMS
     )
+    categorias_ordenadas = [
+        "Amistades fuera de Duoc UC",
+        "Amistades dentro de Duoc UC",
+        "Familia",
+        "Autoridades de Duoc UC",
+        "Administrativos/as",
+        "Profesores/as",
+    ]
     orden_respuestas = [
         "Muy insatisfecho",
         "Insatisfecho",
@@ -916,6 +925,17 @@ def apoyo_percibido(df):
         categories=orden_respuestas,
         ordered=True
     )
+
+    categorias_ordenadas = [
+        LABELS_APOYO_ITEMS.get(cat, cat) for cat in categorias_ordenadas
+    ]
+
+    df_resultado_filtrado["Categoria"] = pd.Categorical(
+        df_resultado_filtrado["Categoria"],
+        categories=categorias_ordenadas,
+        ordered=True
+    )
+
     df_resultado_final = df_resultado_filtrado.sort_values(
         by=['Categoria', 'Respuesta']
     ).reset_index(drop=True)
@@ -936,9 +956,9 @@ def flow_percibido(df):
         etiquetas_categoria=LABELS_FLOW_ITEMS
     )
     orden_respuestas = [
-        "ap negativas",
-        "ap neutras",
-        "ap positivas"
+        "Apreciación negativa",
+        "Apreciación neutra",
+        "Apreciación positiva"
     ]
     df_resultado_filtrado = df_resultado[df_resultado['Respuesta'].isin(orden_respuestas)].copy()
     
@@ -961,7 +981,7 @@ def flow_percibido_positivo(df):
 
     df_temp = df.copy()
     df_temp[columnas_flow] = df_temp[columnas_flow].apply(lambda x: x.map(FLOW_GROUPING_MAP))
-    conteo_positivas = (df_temp[columnas_flow] == "ap positivas").sum().sum()
+    conteo_positivas = (df_temp[columnas_flow] == "Apreciación positiva").sum().sum()
     total_respuestas_validas = df_temp[columnas_flow].count().sum()
 
     if total_respuestas_validas == 0:
@@ -1428,12 +1448,12 @@ def porcentaje_grupo_amarillo_por_condicion(df, filtro=None):
             "Malestar en áreas no profundizadas": 0.96
         }
 
-        df_resultado["DUOC UC"] = df_resultado["Condición"].map(hardcoded)
+        df_resultado["Duoc UC"] = df_resultado["Condición"].map(hardcoded)
 
         # 🔹 Convertir a formato largo para el gráfico
         df_resultado = df_resultado.melt(
             id_vars=["Condición"],
-            value_vars=["Sede", "DUOC UC"],
+            value_vars=["Sede", "Duoc UC"],
             var_name="Serie",
             value_name="Valor"
         )
